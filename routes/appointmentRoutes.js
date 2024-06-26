@@ -4,6 +4,7 @@ import User from "../models/userModels.js";
 import Appointment from "../models/appointmentModels.js";
 import { servicesDb } from "../servicesDb.js";
 import { isAuth } from "../utils.js";
+import Service from "../models/servicesModels.js";
 
 const appointmentRouter = express.Router();
 
@@ -115,11 +116,14 @@ appointmentRouter.put("/edit-appointment/:selectedDB/:appointmentId",isAuth,asyn
 			//selecting the db
 			const db = mongoose.connection.useDb(selectedDB);
 			const appointmentModel = db.model("Appointment", Appointment.schema);
+			const servicesModel = db.model("Service", Service.schema);
+
+			const getAllServices = await servicesModel.find()
 
 			//reemplazando los servicios del frontend con los del backenc que estan completos
-			const matchingServices = servicesDb.filter((serviceDb) => {
+			const matchingServices = getAllServices.filter((serviceFromDb) => {
 				return req.body.services.some((selectedService) => {
-					return serviceDb.serviceName === selectedService.serviceName;
+					return serviceFromDb.serviceName === selectedService.serviceName;
 				});
 			});
 			req.body.services = matchingServices;
@@ -167,6 +171,9 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 			//selecting db
 			const db = mongoose.connection.useDb(selectedDB);
 			const appointmentModel = db.model("Appointment", Appointment.schema);
+			const servicesModel = db.model("Service", Service.schema);
+
+			const getAllServices = await servicesModel.find()
 
 
 			// Verificar si hay conflictos de horario
@@ -202,9 +209,9 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 			 * hago un mapeo con los servicios que tengo aqui en el archivo y reemplazo los daatos
 			 * aqui los servicios ya van con la propiedad de color
 			 */
-			const matchingServices = servicesDb.filter((serviceDb) => {
+			const matchingServices = getAllServices.filter((serviceFromDb) => {
 				return req.body.services.some((selectedService) => {
-					return serviceDb.serviceName === selectedService.serviceName;
+					return serviceFromDb.serviceName === selectedService.serviceName;
 				});
 			});
 
@@ -229,5 +236,24 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 
 
 
+//obtener citas que ofrece una empresa, 
+appointmentRouter.get('/get-services/:selectedDB' , isAuth, async(req,res)=>{
+	console.log('obtener citas')
+	try {
+
+		const {selectedDB} = req.params
+
+		//selecting db
+		const db = mongoose.connection.useDb(selectedDB);
+		const servicesModel = db.model("Service", Service.schema);
+
+		const getAllServices = await servicesModel.find()
+		res.json(getAllServices)
+		
+	} catch (error) {
+		console.log(error);
+		res.json({ message: "error en el servidor" });
+	}
+})
 
 export default appointmentRouter;
