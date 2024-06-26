@@ -46,7 +46,7 @@ userRouter.post("/login/:selectedDB", async (req, res) => {
 
 
 
-		// checkiando credenciales email y password
+		// checkeando credenciales email y password
 		if (!isUserDb)
 			return res.status(404).json({ message: "credenciales no validas" });
 	    if(!bcryptjs.compareSync(password, isUserDb.password)){
@@ -94,7 +94,7 @@ userRouter.post("/crear-empresa/", isOwnerAdmin, async (req, res) => {
 		const Users = db.model("User", User.schema);
 		const Centers = db.model("Center", Center.schema);
 
-		// 2. here we encrypt the password
+		// encriptamos la pass
         const hashedPass =  bcryptjs.hashSync(password)
 
 		await Users.create({
@@ -128,7 +128,7 @@ userRouter.get("/databases", isOwnerAdmin, async (req, res) => {
 		for (const dbInfo of databaseList) {
 			const dbName = dbInfo.name;
 
-			// para no iterar sobre estas base de datos que son seguridad y no se puede iterar
+
 			if (dbName == "admin" || dbName == "local") {
 				continue;
 			}
@@ -390,8 +390,7 @@ userRouter.put("/edit-employee/:selectedDB/:employeeId", isAuth, isAdmin, async 
 		const db = mongoose.connection.useDb(selectedDB);
 		const UserModel = db.model("User", User.schema);
 
-		/**.
-		 * aqui servicios ya que el formato que ocupo es diferente solo obtengo los datos del frontend
+		/*
 		 * hago un mapeo con los servicios que tengo aqui en el archivo y reemplazo los daatos
 		 * aqui los servicios ya van con la propiedad de color
 		 */

@@ -82,9 +82,9 @@ settingRouter.put('/edit-settings/:selectedDB/:settingId', isOwnerAdmin, upload,
 
 
 
-/**este endpoint es publica ya que es necesario para ver el estado de la company
+/**este endpoint es publico ya que es necesario para ver el estado de la company
  * ya que solo es un setting por empresa , ese es el motivo que usamos findOne
- * ya que solo se crear un setting y editara solo ese mismo
+ * ya que solo se crear un setting y permitira editar solo ese mismo
  */
 settingRouter.get('/get-settings/:selectedDB', async(req,res)=>{
     console.log('endpoint get settings')

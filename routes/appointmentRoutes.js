@@ -66,7 +66,7 @@ appointmentRouter.get("/get-all-appointments/:selectedDB",isAuth,async (req, res
 			const usersInAppointments = [];
 			const emailSet = new Set();
 			const appointments2 = [];
-			//aqui es para formatear los datos para podermos usar en el calendario
+			//aqui es para formatear los datos
 			for (let i = 0; i < appointments.length; i++) {
 				const userData = appointments[i]["userInfo"];
 
@@ -159,7 +159,7 @@ appointmentRouter.delete("/cancel-appointment/:selectedDB/:appointmentId",isAuth
 
 
 /*create cita en el centro
-en este ya obtenemos los datos de la cita que vienen del frontend para poderla crear y el id del usuario al que estara la cita relacionada
+en este metodo ya obtenemos los datos de la cita que vienen del frontend para poderla crear y el id del usuario al que estara la cita relacionada
 */
 appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (req, res) => {
 		console.log("endpoint crear cita");
@@ -205,7 +205,6 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 			}
 
 			/**4.
-			 * aqui servicios ya que el formato que ocupo es diferente solo obtengo los datos del frontend
 			 * hago un mapeo con los servicios que tengo aqui en el archivo y reemplazo los daatos
 			 * aqui los servicios ya van con la propiedad de color
 			 */
