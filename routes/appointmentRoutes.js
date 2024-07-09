@@ -177,7 +177,7 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 
 
 			// Verificar si hay conflictos de horario
-			const checkEmployee = await appointmentModel.find({	userInfo: userId,date,});
+			const checkEmployee = await appointmentModel.find({	userInfo: userId,date});
 			const isTimeConflict = checkEmployee.some((appointment) => {
 				if (appointment.isCancel) {
 					return false;
@@ -185,7 +185,7 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 
 				const existingStartTime = new Date(`01/01/2000 ${appointment.initTime}`);
 				const existingEndTime = new Date(`01/01/2000 ${appointment.finalTime}`);
-				const newClientName = appointment.clientName;
+				const newClientName = checkEmployee.clientName;
 				const existingClientName = clientName;
 				const newStartTime = new Date(`01/01/2000 ${initTime}`);
 				const newEndTime = new Date(`01/01/2000 ${finalTime}`);
