@@ -175,8 +175,8 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 
 			const getAllServices = await servicesModel.find()
 
-			const isTimeConflict = false;
-			/* Verificar si hay conflictos de horario
+
+			// Verificar si hay conflictos de horario
 			const checkEmployee = await appointmentModel.find({	userInfo: userId,date,});
 			const isTimeConflict = checkEmployee.some((appointment) => {
 				if (appointment.isCancel) {
@@ -185,20 +185,21 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 
 				const existingStartTime = new Date(`01/01/2000 ${appointment.initTime}`);
 				const existingEndTime = new Date(`01/01/2000 ${appointment.finalTime}`);
+				const newClientName = appointment.clientName;
+				const existingClientName = clientName;
 				const newStartTime = new Date(`01/01/2000 ${initTime}`);
 				const newEndTime = new Date(`01/01/2000 ${finalTime}`);
 
 				// Verificar si hay solapamiento de horario
 				if (
-					(newStartTime >= existingStartTime &&
-						newStartTime < existingEndTime) || // Nuevo inicio dentro del horario existente
-					(newEndTime > existingStartTime && newEndTime <= existingEndTime) || // Nuevo final dentro del horario existente
-					(newStartTime <= existingStartTime && newEndTime >= existingEndTime) // Nuevo horario completamente cubre el horario existente
+					(newStartTime == existingStartTime) && // Nuevo inicio dentro del horario existente
+					(newEndTime == existingEndTime) && // Nuevo final dentro del horario existente
+					(newClientName == existingClientName) // Nuevo horario completamente cubre el horario existente
 				) {
 					return true; // Hay conflicto de horario
 				}
 				return false; // no hay conflictos
-			});*/
+			});
 
 			if (isTimeConflict) {
 				return res.status(400).json({message:"El horario seleccionado está ocupado. Por favor, elige otro horario.",});
