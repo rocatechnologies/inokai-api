@@ -185,8 +185,8 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 
 				const existingStartTime = new Date(`01/01/2000 ${appointment.initTime}`);
 				const existingEndTime = new Date(`01/01/2000 ${appointment.finalTime}`);
-				const newClientName = checkEmployee.clientName;
-				const existingClientName = clientName;
+				const newClientName = new String (`${clientName}`);
+				const existingClientName = new String (`${appointment.clientName}`);
 				const newStartTime = new Date(`01/01/2000 ${initTime}`);
 				const newEndTime = new Date(`01/01/2000 ${finalTime}`);
 
