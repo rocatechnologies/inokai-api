@@ -180,24 +180,33 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 			const checkEmployee = await appointmentModel.find({	userInfo: userId,date});
 			const isTimeConflict = checkEmployee.some((appointment) => {
 				if (appointment.isCancel) {
+					console.log('no hay conflictos');
 					return false;
+					
 				}
-
+                console.log(' hay conflictos');
 				const existingStartTime = new Date(`01/01/2000 ${appointment.initTime}`);
+				console.log('existingStartTime:' + `${appointment.initTime}`);
 				const existingEndTime = new Date(`01/01/2000 ${appointment.finalTime}`);
+				console.log('existingEndTime:' + `${appointment.finalTime}`);
 				const newClientName = new String (`${clientName}`);
+				console.log('newClientName:' + `${clientName}`);
 				const existingClientName = new String (`${appointment.clientName}`);
+				console.log('existingClientName:' + `${appointment.clientName}`);
 				const newStartTime = new Date(`01/01/2000 ${initTime}`);
 				const newEndTime = new Date(`01/01/2000 ${finalTime}`);
-
+                
 				// Verificar si hay solapamiento de horario
 				if (
 					(newStartTime == existingStartTime) && // Nuevo inicio dentro del horario existente
 					(newEndTime == existingEndTime) && // Nuevo final dentro del horario existente
 					(newClientName == existingClientName) // Nuevo horario completamente cubre el horario existente
 				) {
+					console.log(' hay conflictos tras validar');
 					return true; // Hay conflicto de horario
+
 				}
+				console.log('no hay conflictos tras validar');
 				return false; // no hay conflictos
 			});
 
