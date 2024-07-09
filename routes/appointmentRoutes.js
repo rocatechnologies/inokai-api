@@ -201,9 +201,9 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
                 
 				// Verificar si hay solapamiento de horario
 				if (
-					(newStartTime == existingStartTime) && // Nuevo inicio dentro del horario existente
-					(newEndTime == existingEndTime) &&
-					(clientName === appointment.clientName)
+					newStartTime.getTime() === existingStartTime.getTime() && // Nuevo inicio coincide exactamente
+					newEndTime.getTime() === existingEndTime.getTime() && // Nuevo final coincide exactamente
+					clientName === appointment.clientName // El mismo cliente
 					 // Nuevo horario completamente cubre el horario existente
 				) {
 					console.log(' hay conflictos tras validar');
