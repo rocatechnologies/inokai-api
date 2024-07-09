@@ -205,7 +205,8 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 			});
 
 			if (isTimeConflict) {
-				return res.status(400).json({message:"El horario seleccionado está ocupado. Por favor, elige otro horario.",});
+				//return res.status(400).json({message:"El horario seleccionado está ocupado. Por favor, elige otro horario.",});
+				return false;
 			}
 
 			/**4.
