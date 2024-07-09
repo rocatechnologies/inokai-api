@@ -184,27 +184,17 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 					return false;
 					
 				}
-                console.log(' hay conflictos');
 				const existingStartTime = new Date(`01/01/2000 ${appointment.initTime}`);
-				console.log('existingStartTime:' + `${appointment.initTime}`);
 				const existingEndTime = new Date(`01/01/2000 ${appointment.finalTime}`);
-				console.log('existingEndTime:' + `${appointment.finalTime}`);
-				const newClientName = new String (`${clientName}`);
-				console.log('newClientName:' + `${clientName}`);
-				const existingClientName = new String (`${appointment.clientName}`);
-				console.log('existingClientName:' + `${appointment.clientName}`);
 				const newStartTime = new Date(`01/01/2000 ${initTime}`);
-				console.log('newStartTime:' + `${initTime}`);
 				const newEndTime = new Date(`01/01/2000 ${finalTime}`);
-				console.log('newEndTime:' + `${finalTime}`);
 
                 
-				// Verificar si hay solapamiento de horario
+				// evita citas duplicadas
 				if (
 					newStartTime.getTime() === existingStartTime.getTime() && // Nuevo inicio coincide exactamente
 					newEndTime.getTime() === existingEndTime.getTime() && // Nuevo final coincide exactamente
 					clientName === appointment.clientName // El mismo cliente
-					 // Nuevo horario completamente cubre el horario existente
 				) {
 					console.log(' hay conflictos tras validar');
 					return true; // Hay conflicto de horario
