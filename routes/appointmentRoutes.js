@@ -194,7 +194,10 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 				const existingClientName = new String (`${appointment.clientName}`);
 				console.log('existingClientName:' + `${appointment.clientName}`);
 				const newStartTime = new Date(`01/01/2000 ${initTime}`);
+				console.log('newStartTime:' + `${initTime}`);
 				const newEndTime = new Date(`01/01/2000 ${finalTime}`);
+				console.log('newEndTime:' + `${finalTime}`);
+
                 
 				// Verificar si hay solapamiento de horario
 				if (
