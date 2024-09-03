@@ -13,7 +13,8 @@ const userSchema = new Schema({
         type:Schema.Types.ObjectId,
         ref:"Center"
     },
-    services:[{}]
+    services:[{}],
+    specialities:[{}] //anado este nuevo campo para darle un nuevo atributo llamado especialidad
 
 });
 
