@@ -2,8 +2,9 @@ import express from "express";
 import mongoose from "mongoose";
 import User from "../models/userModels.js";
 import Appointment from "../models/appointmentModels.js";
-import { servicesDb } from "../servicesDb.js";
-import { isAuth } from "../utils.js";
+import Speciality from "../models/specialitiesModels.js";
+// import { servicesDb } from "../servicesDb.js";
+import { isAdmin, isAuth, isOwnerAdmin } from "../utils.js";
 import Service from "../models/servicesModels.js";
 
 const appointmentRouter = express.Router();
@@ -23,7 +24,7 @@ appointmentRouter.get("/get-all-employees/:selectedDB",isAuth,async (req, res) =
 			const db = mongoose.connection.useDb(selectedDB);
 			const UserModel = db.model("User", User.schema);
 
-			const isEmployees = await UserModel.find({ centerInfo }).select("name");
+			const isEmployees = await UserModel.find({ centerInfo, isAvailable:'yes' }).select("name");
 			res.json(isEmployees);
 		} catch (error) {
 			console.log(error);
@@ -84,6 +85,7 @@ appointmentRouter.get("/get-all-appointments/:selectedDB",isAuth,async (req, res
 					user_id: data["userInfo"]["_id"],
 					cenetrInfo: data.centerInfo,
 					services: data.services,
+					remarks:data.remarks
 				};
 
 				appointments2.push(myObjet);
@@ -159,14 +161,14 @@ appointmentRouter.delete("/cancel-appointment/:selectedDB/:appointmentId",isAuth
 
 
 /*create cita en el centro
-en este metodo ya obtenemos los datos de la cita que vienen del frontend para poderla crear y el id del usuario al que estara la cita relacionada
+en este metodo ya obtenemos los datos de la cita que vienen del frontend para poderla crear y el id del usuario/emplealdo al que estara la cita relacionada
 */
 appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (req, res) => {
 		console.log("endpoint crear cita");
 		try {
 			const { selectedDB, userId } = req.params;
 
-			const { clientName, clientPhone, date, initTime, finalTime, services } =req.body;
+			const { clientName, clientPhone, date, initTime, finalTime, services, remarks } =req.body;
 
 			//selecting db
 			const db = mongoose.connection.useDb(selectedDB);
@@ -205,8 +207,8 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 			});
 
 			if (isTimeConflict) {
-				//return res.status(400).json({message:"El horario seleccionado está ocupado. Por favor, elige otro horario.",});
-				return false;
+				return res.status(400).json({message:"El horario seleccionado está ocupado. Por favor, elige otro horario.",});
+				// return false;
 			}
 
 			/**4.
@@ -214,7 +216,7 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 			 * aqui los servicios ya van con la propiedad de color
 			 */
 			const matchingServices = getAllServices.filter((serviceFromDb) => {
-				return req.body.services.some((selectedService) => {
+				return services.some((selectedService) => {
 					return serviceFromDb.serviceName === selectedService.serviceName;
 				});
 			});
@@ -228,6 +230,7 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 				services: matchingServices,
 				userInfo: userId,
 				centerInfo: req.user.centerInfo,
+				remarks
 			});
 
 			res.json({ message: "cita creada exitosamente" });
@@ -239,8 +242,8 @@ appointmentRouter.post("/create-appointment/:selectedDB/:userId",isAuth,async (r
 );
 
 
-
-//obtener citas que ofrece una empresa, 
+///////////////////  RUTAS PARA SERVICES
+//obtener todas las citas que ofrece una empresa, 
 appointmentRouter.get('/get-services/:selectedDB' , isAuth, async(req,res)=>{
 	console.log('obtener citas')
 	try {
@@ -259,5 +262,214 @@ appointmentRouter.get('/get-services/:selectedDB' , isAuth, async(req,res)=>{
 		res.json({ message: "error en el servidor" });
 	}
 })
+
+// crear nuevos services de una empresa
+appointmentRouter.post('/create-services/:selectedDB' , isOwnerAdmin, async(req,res)=>{
+	console.log('obtener citas')
+	try {
+
+		const {selectedDB} = req.params
+
+		//selecting db
+		const db = mongoose.connection.useDb(selectedDB);
+		const servicesModel = db.model("Service", Service.schema);
+
+		await servicesModel.create(req.body)
+
+		res.json({ message: "working" });
+		
+	} catch (error) {
+		console.log(error);
+		res.json({ message: "error en el servidor" });
+	}
+})
+
+
+
+// editar services de una empresa
+appointmentRouter.put("/edit-services/:selectedDB/:id", isOwnerAdmin, async (req, res) => {
+	try {
+		const { selectedDB, id } = req.params;
+
+		// conectandome a la base de dato seleccionada y seleccionando modelo
+		const db = mongoose.connection.useDb(selectedDB);
+		const servicesModel = db.model("Services", Service.schema);
+
+		const isCenterDb = await servicesModel.findByIdAndUpdate(
+			id,
+			req.body
+		);
+
+		console.log(isCenterDb);
+
+		res.json({ message: "service actualizado" });
+	} catch (error) {
+		console.log(error);
+		res.json({ message: "error en el servidor" });
+	}
+});
+
+
+
+// se deja publica ya que el owneradmin y admin pueden acceder a ella
+// si se controlara por autenticacion se tendria que repiter dos veces el mismo endpoint-
+// uno para admin y otro para owneradmin
+appointmentRouter.get('/get-specialities/:selectedDB' , async(req,res)=>{
+	console.log('obtener citas')
+	try {
+
+		const {selectedDB} = req.params
+
+		//selecting db
+		const db = mongoose.connection.useDb(selectedDB);
+		const specialityModel = db.model("Speciality", Speciality.schema);
+
+		const getAllSpecialities = await specialityModel.find()
+		res.json(getAllSpecialities)
+		
+	} catch (error) {
+		console.log(error);
+		res.json({ message: "error en el servidor" });
+	}
+})
+
+// appointmentRouter.put("/edit-specialities/:selectedDB/:id", isOwnerAdmin, async (req, res) => {
+// 	try {
+// 		const { selectedDB, id } = req.params;
+
+// 		// conectandome a la base de dato seleccionada y seleccionando modelo
+// 		const db = mongoose.connection.useDb(selectedDB);
+// 		const specialityModel = db.model("Speciality", Speciality.schema);
+
+// 		const isCenterDb = await specialityModel.findByIdAndUpdate(
+// 			id,
+// 			req.body
+// 		);
+
+// 		console.log(isCenterDb);
+
+// 		res.json({ message: "speciality actualizado" });
+// 	} catch (error) {
+// 		console.log(error);
+// 		res.json({ message: "error en el servidor" });
+// 	}
+// });
+
+
+
+
+
+
+appointmentRouter.get('/filter/:selectedDB', isAuth, async (req, res) => {
+	console.log('endpoint filter')
+    try {
+        const { selectedDB } = req.params;
+        const { clientName, clientPhone, centerInfo } = req.query; // Obtener los parámetros de búsqueda desde el query
+
+        // Seleccionar la base de datos correspondiente
+        const db = mongoose.connection.useDb(selectedDB);
+        const userModels = db.model("User", User.schema);
+
+		const appointmentModels = db.model('Appointment', Appointment.schema)
+
+        // Construir el filtro de búsqueda
+        let searchCriteria = {};
+
+		console.log(req.user.centerInfo)
+
+        // Si el query 'name' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
+        if (clientName) {
+            searchCriteria.clientName = { $regex: new RegExp(clientName, 'i') }; // 'i' para que sea case-insensitive
+        }
+
+        // Si el query 'phone' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
+        if (clientPhone) {
+            searchCriteria.clientPhone = { $regex: new RegExp(clientPhone, 'i') }; // 'i' para que sea case-insensitive
+        }
+
+		if (req.user.centerInfo) {
+            searchCriteria.centerInfo = req.user.centerInfo; // 'i' para que sea case-insensitive
+        }else{
+			// console.log('aqui')
+			searchCriteria.centerInfo = centerInfo
+		}
+
+        // Ejecutar la consulta con los criterios de búsqueda
+        const results = await appointmentModels.find(searchCriteria);
+
+        res.json(results); // Devolver los resultados filtrados
+    } catch (error) {
+        console.log(error);
+        res.json({ message: "error en el servidor" });
+    }
+});
+
+
+
+
+appointmentRouter.get("/send", async (req, res) => {
+	console.log("en mandar mensaje");
+
+	var botId = "107869402242848";
+	var phoneNbr = "50489274186";
+	var bearerToken =
+		"EAAKiHZAWUoIwBO5T22EfACZBdOE218Idbn2m8tkW1jac7GruyoRl3E66NbX37QqVMrqG5TILRtqrmaJQZBVk4SDbZAnBdKYjzTlgR0ZCeySfndWshvXk6zISQWKWyZBWujauPvqU3W7WZBa50FKzFViUoViuqZCs1dwxy8OQrQpZCwBDzVZCxkKzFIbFHuiObY8i3OlRZAzYhkuvyN4nU2m";
+	var url = "https://graph.facebook.com/v15.0/" + botId + "/messages";
+
+	// Valores dinámicos que quieres enviar
+	var nombre = "David";
+	var dia = "mañana";
+	var hora = "12:15";
+
+	var data = {
+		messaging_product: "whatsapp",
+		to: phoneNbr,
+		type: "template",
+		template: {
+			name: "recordatorio_cita",
+			language: { code: "es" },
+
+			components: [
+				{
+					type: "body",
+					parameters: [
+						{ type: "text", text: nombre },
+						{ type: "text", text: dia },
+						{ type: "text", text: hora },
+					],
+				},
+			],
+		},
+	};
+
+	var postReq = {
+		method: "POST",
+		headers: {
+			Authorization: "Bearer " + bearerToken,
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(data),
+		json: true,
+	};
+	// fetch(url, postReq)
+	//   .then(data => {
+	//     return data.json()
+	//   })
+	//   .then(res => {
+	//     console.log(res)
+	//   })
+	//   .catch(error => console.log(error));
+
+	try {
+		const response = await fetch(url, postReq);
+		const jsonResponse = await response.json();
+		console.log(jsonResponse);
+		res.send(jsonResponse); // Responder con el resultado
+	} catch (error) {
+		console.log(error);
+		res.status(500).send(error); // Manejar el error
+	}
+});
+
 
 export default appointmentRouter;

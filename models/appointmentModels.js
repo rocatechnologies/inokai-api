@@ -16,7 +16,9 @@ const appointmentSchema = new Schema({
         type:Schema.Types.ObjectId,
         ref:"Center"
     },
-    services:[{}]
+    services:[{}],
+
+    remarks: {type:String}
 
 });
 

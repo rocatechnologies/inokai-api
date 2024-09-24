@@ -14,8 +14,23 @@ const userSchema = new Schema({
         ref:"Center"
     },
     services:[{}],
-    specialities:[{}] //anado este nuevo campo para darle un nuevo atributo llamado especialidad
+    specialities:[{ type: Schema.Types.ObjectId, ref: 'Speciality' }], //anado este nuevo campo para darle un nuevo atributo llamado especialidad
 
+    isAvailable: { 
+        type: String, 
+        enum: ["yes", "no", "not applicable"],
+        default: "yes"  // 'yes' para disponible, 'no' para no disponible, y 'not applicable' para roles que no sean employee
+    }
+
+});
+
+
+// Middleware para establecer isAvailable según el role
+userSchema.pre('save', function (next) {
+    if (this.role !== 'employee') {
+        this.isAvailable = "not applicable";  // Si el role no es 'employee', asigna "not applicable"
+    }
+    next();
 });
 
 const User = mongoose.model('User', userSchema);

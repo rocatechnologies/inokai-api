@@ -6,7 +6,7 @@ const serviceSchema = new Schema({
     serviceName:{type:String},
     duration:{type:String},
     color: { type: String },
-    specialities:[{}]
+    specialities:[{ type: Schema.Types.ObjectId, ref: 'Speciality' }]
 
 });
 

@@ -8,6 +8,7 @@ const settingSchema = new Schema({
     companyId:{type:String},
     secondaryColor: { type: String },
     logo: [{}],
+    smallLogo:[{}],
     status:{type:String, default:'active'} //options are   active / suspended
 });
 

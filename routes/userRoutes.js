@@ -2,6 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import User from "../models/userModels.js";
 import Center from "../models/centerModels.js";
+import Service from "../models/servicesModels.js";
 import Setting from "../models/settingModels.js";
 import bcryptjs from "bcryptjs";
 import { servicesDb } from "../servicesDb.js";
@@ -73,7 +74,7 @@ userRouter.post("/crear-empresa/", isOwnerAdmin, async (req, res) => {
 	console.log("en crear empresa");
 	try {
 		// const { selectedDB } = req.params;
-		const { name, email, DNI, password, companyName, centers } = req.body;
+		const { name, email, DNI, password, companyName, centers, services } = req.body;
 
 		// Verificar si la base de datos seleccionada existe
 		const dbExists = await doesDatabaseExist(companyName);
@@ -84,6 +85,7 @@ userRouter.post("/crear-empresa/", isOwnerAdmin, async (req, res) => {
 				.json({ message: "este nombre para base de datos ya esta en uso" });
 		}
 
+		// aqui se crear la nueva collection/base de dato
 		const db = mongoose.connection.useDb(companyName);
 
 		const isUserDb = await db.model("User", User.schema).findOne({ email, DNI });
@@ -93,10 +95,11 @@ userRouter.post("/crear-empresa/", isOwnerAdmin, async (req, res) => {
 
 		const Users = db.model("User", User.schema);
 		const Centers = db.model("Center", Center.schema);
+		const Services = db.model('Service', Service.schema)
 
 		// encriptamos la pass
         const hashedPass =  bcryptjs.hashSync(password)
-
+	
 		await Users.create({
 			name,
 			email,
@@ -107,9 +110,14 @@ userRouter.post("/crear-empresa/", isOwnerAdmin, async (req, res) => {
 
 		await Centers.create(centers);
 
+		// Crear múltiples servicios en la colección "services"
+		if (services && services.length > 0) {
+			await Services.insertMany(services);
+		}
+
 		res
 			.status(200)
-			.send(`Empresa y usuario creados exitosamente. ${companyName}`);
+			.json(`Empresa y usuario creados exitosamente. ${companyName}`);
 	} catch (error) {
 		console.log(error);
 	}
@@ -177,6 +185,7 @@ userRouter.get("/get-empresa/:selectedDB", isOwnerAdmin, async (req, res) => {
 		const rest = {
 			centers: data.centers,
 			users: data.users[0],
+			services:data.services
 		};
 
 		// console.log(rest)
@@ -188,7 +197,7 @@ userRouter.get("/get-empresa/:selectedDB", isOwnerAdmin, async (req, res) => {
 	}
 });
 
-//EDITAR USUARIO ADMIN DE UNA EMPRESA
+//EDITAR USUARIO ADMIN DE UNA EMPRESA (SOLO EL OwnerAdmin puede hacer esta accion)
 //:id  es el id del administrador de la empresa
 userRouter.put("/edit-admin/:selectedDB/:id", isOwnerAdmin, async (req, res) => {
 	console.log('endpoint editar admin de una empresa')
@@ -330,7 +339,7 @@ userRouter.post("/create-employee/:selectedDB/:centerId", isAuth, isAdmin, async
 	try {
 		//1. proceso de obtner los params los datos del frontend, y seleccionar la base de datos
 		const { selectedDB, centerId } = req.params;
-		const { name, email, DNI, phone, password, services } = req.body;
+		const { name, email, DNI, phone, password, services, specialities } = req.body;
 		const db = mongoose.connection.useDb(selectedDB);
 
 		//2. aqui se hace referencias a los schema de las bases de datos que se usaran en el endpont
@@ -365,6 +374,7 @@ userRouter.post("/create-employee/:selectedDB/:centerId", isAuth, isAdmin, async
 			DNI,
 			password: hashedPass,
 			services: matchingServices,
+			specialities,
 			role: "employee",
 			centerInfo: centerId,
 		});
