@@ -5,7 +5,7 @@ import Center from "../models/centerModels.js";
 import Service from "../models/servicesModels.js";
 import Setting from "../models/settingModels.js";
 import bcryptjs from "bcryptjs";
-import { servicesDb } from "../servicesDb.js";
+// import { servicesDb } from "../servicesDb.js";
 
 import generarJWT from "../helpers/generarJWT.js";
 import doesDatabaseExist from "../helpers/doesDatabaseExist.js";
@@ -345,6 +345,7 @@ userRouter.post("/create-employee/:selectedDB/:centerId", isAuth, isAdmin, async
 		//2. aqui se hace referencias a los schema de las bases de datos que se usaran en el endpont
 		const Users = db.model("User", User.schema);
 		const Centers = db.model("Center", Center.schema);
+		const Services = db.model("Service", Service.schema)
 
 		//3. aqui solo se busca si el empleado ya existe para no dejarlo crear de nuevo
 		const isEmployee = await Users.findOne({ $or: [{ email }, { DNI }] });
@@ -357,7 +358,8 @@ userRouter.post("/create-employee/:selectedDB/:centerId", isAuth, isAdmin, async
 		 * hago un mapeo con los servicios que tengo aqui en el archivo y reemplazo los daatos
 		 * aqui los servicios ya van con la propiedad de color
 		 */
-		const matchingServices = servicesDb.filter((serviceDb) => {
+		const getAllServices = await Services.find()
+		const matchingServices = getAllServices.filter((serviceDb) => {
 			return req.body.services.some((selectedService) => {
 				return serviceDb.serviceName === selectedService.serviceName;
 			});
@@ -399,12 +401,14 @@ userRouter.put("/edit-employee/:selectedDB/:employeeId", isAuth, isAdmin, async 
 
 		const db = mongoose.connection.useDb(selectedDB);
 		const UserModel = db.model("User", User.schema);
+		const Services = db.model("Service", Service.schema)
 
 		/*
 		 * hago un mapeo con los servicios que tengo aqui en el archivo y reemplazo los daatos
 		 * aqui los servicios ya van con la propiedad de color
 		 */
-		const matchingServices = servicesDb.filter((serviceDb) => {
+		const getAllServices = await Services.find()
+		const matchingServices = getAllServices.filter((serviceDb) => {
 			return req.body.services.some((selectedService) => {
 				return serviceDb.serviceName === selectedService.serviceName;
 			});
