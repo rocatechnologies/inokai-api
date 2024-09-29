@@ -35,7 +35,7 @@ const cloudinaryUploadFiles = async (files, folder) => {
       };
       filesCloudinaryInfo.push(resolve);
     }
-    console.log(filesCloudinaryInfo,'aqui')
+    // console.log(filesCloudinaryInfo,'aqui')
 
     return filesCloudinaryInfo;
 

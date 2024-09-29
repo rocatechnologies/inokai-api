@@ -26,15 +26,19 @@ settingRouter.post('/crear-settings/:selectedDB', isOwnerAdmin, upload, async(re
         
         const settings = new SettingModel(req.body)
 
-
-        
-        if(files.length > 0){
-            // console.log(files)
-            const cloudinaryResult = await cloudinaryUploadFiles(files, 'sergioR')
+        // codigo para separar el large del small logo y guardarlos separados en la base de datos
+        const isLarge =  files.find(e => e.originalname.includes('large-l-ino24'))
+        const isSmall =  files.find(e => e.originalname.includes('small-l-ino24'))
+        if(isLarge){
+            const cloudinaryResult = await cloudinaryUploadFiles([isLarge], 'sergioR')
             settings.logo = cloudinaryResult
         }
+        if(isSmall){
+            const cloudinaryResult = await cloudinaryUploadFiles([isSmall], 'sergioR')
+            settings.smallLogo = cloudinaryResult
+        }
 
-        // console.log(settings)
+
         await settings.save()
 
         res.json({message:'setting creados sactifactoriamente'})
@@ -57,16 +61,35 @@ settingRouter.put('/edit-settings/:selectedDB/:settingId', isOwnerAdmin, upload,
         const db = mongoose.connection.useDb(selectedDB)
         const SettingModel = db.model('Setting',Setting.schema)
 
+        //de dispara esta funciona si la ediccion viene con alguna imagen de logo
         if(files.length > 0){
             const isSetting = await SettingModel.findById(settingId)
-            const fileToDelete = isSetting.logo
-            const cloudinaryResult = await cloudinaryUploadFiles(files, 'sergioR')
 
+            const isLarge =  files.find(e => e.originalname.includes('large-l-ino24'))
+            const isSmall =  files.find(e => e.originalname.includes('small-l-ino24'))
+
+            let fileToDelete = []
+
+            //codigo para separar small de large loco editarlos y eliminar el correspondiente
+            if(isLarge){
+                // console.log('si hay large')
+                const cloudinaryResult = await cloudinaryUploadFiles([isLarge], 'sergioR')
+                req.body.logo = cloudinaryResult
+                fileToDelete = [...fileToDelete, ...isSetting?.logo]
+                // console.log(fileToDelete,'en large')
+            }
+            if(isSmall){
+                // console.log('si hay small')
+                const cloudinaryResult = await cloudinaryUploadFiles([isSmall], 'sergioR')
+                req.body.smallLogo = cloudinaryResult
+                fileToDelete = [...fileToDelete, ...isSetting?.smallLogo]
+                // console.log(fileToDelete, 'en small')
+            }
+            //aqui los elimina del cloudinary
             for (const item of fileToDelete) {
-                console.log(item.cloudinary_id)
+                // console.log(item.cloudinary_id)
                 await cloudinaryDeleteOneFile(item.cloudinary_id)
             }
-            req.body.logo = cloudinaryResult
         }
 
         await SettingModel.findByIdAndUpdate(settingId, req.body)
