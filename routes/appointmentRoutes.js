@@ -537,28 +537,29 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 
             const appointments = [];
 
-            // Agregar citas para horas fuera de horario
-            if (formattedHora_Entrada !== "09:00:00") {
-                appointments.push({
-                    clientName: "Fuera de horario",
-                    clientPhone: "Fuera de horario",
-                    date: dateString,
-                    initTime: formattedHora_Entrada,
-                    finalTime: formattedHora_Salida,
-                    userInfo: user._id,
-                    centerInfo: center._id,
-                });
-            }else if (formattedHora_Salida !== "23:00:00") {
-                appointments.push({
-                    clientName: "Fuera de horario",
-                    clientPhone: "Fuera de horario",
-                    date: dateString,
-                    initTime: formattedHora_Entrada,
-                    finalTime: formattedHora_Salida,
-                    userInfo: user._id,
-                    centerInfo: center._id,
-                });
-            }
+          if (Hora_Entrada !== "09:00:00") {
+            appointments.push({
+              clientName: "Fuera de horario",
+              clientPhone: "Fuera de horario",
+              date: dateString,
+              initTime: "09:00:00",
+              finalTime: formattedHora_Entrada,
+              userInfo: user._id,
+              centerInfo: center._id,
+            });
+          }
+
+          if (Hora_Salida !== "23:00:00") {
+            appointments.push({
+              clientName: "Fuera de horario",
+              clientPhone: "Fuera de horario",
+              date: dateString,
+              initTime: formattedHora_Salida,
+              finalTime: "23:00:00",
+              userInfo: user._id,
+              centerInfo: center._id,
+            });
+          }
 
             // Insertar las citas solo si no existen
             for (const appointment of appointments) {
