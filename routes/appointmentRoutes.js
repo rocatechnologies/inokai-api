@@ -401,7 +401,9 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 // Endpoint para importar el CSV y crear las citas
 // recibe un query que es una fecha y hay que borrar todas las citas en esa fecha
 appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
+	console.log('en generar horarios')
 
+	
     const results = req.body; 
 	const { dateToDelete } = req.query;
     let filasProcesadas = 0;
@@ -414,23 +416,45 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 
     try {
 		// Verifica si hay una fecha proporcionada en la query para borrar las citas del mes
-		if (dateToDelete) {
-			const momentDate = moment.tz(dateToDelete, "MM/DD/YYYY", "Europe/Madrid");
+		// if (dateToDelete) {
+		// 	const momentDate = moment.tz(dateToDelete, "MM/DD/YYYY", "Europe/Madrid");
 			
-			// Calcular el primer y último día del mes de la fecha proporcionada
-			const startOfMonth = momentDate.clone().startOf('month').format("MM/DD/YYYY");
-			const endOfMonth = momentDate.clone().endOf('month').format("MM/DD/YYYY");
+		// 	// Calcular el primer y último día del mes de la fecha proporcionada
+		// 	const startOfMonth = momentDate.clone().startOf('month').format("MM/DD/YYYY");
+		// 	const endOfMonth = momentDate.clone().endOf('month').format("MM/DD/YYYY");
 			
-			// Eliminar todas las citas entre esas fechas
-			await appointmentModel.deleteMany({
-				date: {
-					$gte: startOfMonth,
-					$lte: endOfMonth
-				}
-			});
+		// 	// Eliminar todas las citas entre esas fechas
+		// 	await appointmentModel.deleteMany({
+		// 		date: {
+		// 			$gte: startOfMonth,
+		// 			$lte: endOfMonth
+		// 		}
+		// 	});
 
-			console.log(`Citas del mes de ${startOfMonth} a ${endOfMonth} eliminadas correctamente.`);
-		}
+		// 	console.log(`Citas del mes de ${startOfMonth} a ${endOfMonth} eliminadas correctamente.`);
+		// }
+
+
+		if (dateToDelete) {
+			console.log('en la de eliminar')
+            const momentDate = moment.tz(dateToDelete, "MM/DD/YYYY", "Europe/Madrid");
+
+            // Calcular el primer y último día del mes de la fecha proporcionada
+            const startOfMonth = momentDate.clone().startOf('month').format("MM/DD/YYYY");
+            const endOfMonth = momentDate.clone().endOf('month').format("MM/DD/YYYY");
+
+            // Eliminar solo las citas entre esas fechas que tengan "Libre", "Baja", etc. en Hora_Entrada
+            await appointmentModel.deleteMany({
+                date: {
+                    $gte: startOfMonth,
+                    $lte: endOfMonth
+                },
+                clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
+            });
+
+            console.log(`Citas con "Libre", "Baja", etc. eliminadas entre ${startOfMonth} y ${endOfMonth} correctamente.`);
+        }
+
 
 
         for (const row of results) {
@@ -444,7 +468,7 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
             } = row;
 
             if (!ID_Trabajador || ID_Trabajador.trim() === "") {
-                console.log("ID_Trabajador no definido:", row);
+                // console.log("ID_Trabajador no definido:", row);
                 continue;
             }
 
@@ -513,28 +537,29 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 
             const appointments = [];
 
-            // Agregar citas para horas fuera de horario
-            if (formattedHora_Entrada !== "09:00:00") {
-                appointments.push({
-                    clientName: "Fuera de horario",
-                    clientPhone: "Fuera de horario",
-                    date: dateString,
-                    initTime: formattedHora_Entrada,
-                    finalTime: formattedHora_Salida,
-                    userInfo: user._id,
-                    centerInfo: center._id,
-                });
-            }else if (formattedHora_Salida !== "23:00:00") {
-                appointments.push({
-                    clientName: "Fuera de horario",
-                    clientPhone: "Fuera de horario",
-                    date: dateString,
-                    initTime: formattedHora_Entrada,
-                    finalTime: formattedHora_Salida,
-                    userInfo: user._id,
-                    centerInfo: center._id,
-                });
-            }
+          if (Hora_Entrada !== "09:00:00") {
+            appointments.push({
+              clientName: "Fuera de horario",
+              clientPhone: "Fuera de horario",
+              date: dateString,
+              initTime: "09:00:00",
+              finalTime: formattedHora_Entrada,
+              userInfo: user._id,
+              centerInfo: center._id,
+            });
+          }
+
+          if (Hora_Salida !== "23:00:00") {
+            appointments.push({
+              clientName: "Fuera de horario",
+              clientPhone: "Fuera de horario",
+              date: dateString,
+              initTime: formattedHora_Salida,
+              finalTime: "23:00:00",
+              userInfo: user._id,
+              centerInfo: center._id,
+            });
+          }
 
             // Insertar las citas solo si no existen
             for (const appointment of appointments) {
