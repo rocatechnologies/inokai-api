@@ -522,7 +522,7 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 
             const appointments = [];
 
-          if (Hora_Entrada !== "10:00:00") {
+          if (formattedHora_Entrada !== "10:00:00") {
             appointments.push({
               clientName: "Fuera de horario",
               clientPhone: "Fuera de horario",
@@ -534,7 +534,7 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
             });
           }
 
-          if (Hora_Salida !== "22:00:00") {
+          if (formattedHora_Salida !== "22:00:00") {
             appointments.push({
               clientName: "Fuera de horario",
               clientPhone: "Fuera de horario",
@@ -546,7 +546,7 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
             });
           }
 
-		  if (Hora_Entrada !== "10:00:00" && Hora_Salida !== "22:00:00") {
+		  if (formattedHora_Entrada !== "10:00:00" && formattedHora_Salida !== "22:00:00") {
             appointments.push({
               clientName: "Fuera de horario",
               clientPhone: "Fuera de horario",
