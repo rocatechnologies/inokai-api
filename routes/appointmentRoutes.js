@@ -443,17 +443,19 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
         for (const row of results) {
             filasProcesadas++;
 
-            const {
-                ID_Trabajador,
-                Fecha,
-                Hora_Entrada,
-                Hora_Salida,
-            } = row;
+      // Desestructuración y eliminación de espacios en blanco
+       const {
+        ID_Trabajador: rawID_Trabajador,
+        Fecha: rawFecha,
+        Hora_Entrada: rawHora_Entrada,
+        Hora_Salida: rawHora_Salida,
+        } = row;
 
-            if (!ID_Trabajador || ID_Trabajador.trim() === "") {
-                // console.log("ID_Trabajador no definido:", row);
-                continue;
-            }
+			// Eliminar espacios en blanco de delante y detrás de los valores
+			const ID_Trabajador = rawID_Trabajador?.trim();
+			const Fecha = rawFecha?.trim();
+			const Hora_Entrada = rawHora_Entrada?.trim();
+			const Hora_Salida = rawHora_Salida?.trim();
 
             const trabajadorUppercase = ID_Trabajador.toUpperCase();
             const user = await userModel.findOne({ DNI: trabajadorUppercase });
