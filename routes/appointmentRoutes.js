@@ -546,6 +546,28 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
             });
           }
 
+		  if (Hora_Entrada !== "10:00:00" && Hora_Salida !== "22:00:00") {
+            appointments.push({
+              clientName: "Fuera de horario",
+              clientPhone: "Fuera de horario",
+              date: dateString,
+              initTime: "10:00:00",
+              finalTime: formattedHora_Entrada,
+              userInfo: user._id,
+              centerInfo: center._id,
+            });
+		
+			appointments.push({
+				clientName: "Fuera de horario",
+				clientPhone: "Fuera de horario",
+				date: dateString,
+				initTime: formattedHora_Salida,
+				finalTime: "22:00:00",
+				userInfo: user._id,
+				centerInfo: center._id,
+			  });
+          }
+
             // Insertar las citas solo si no existen
             for (const appointment of appointments) {
                 const existingAppointmentCheck = await appointmentModel.findOne({
