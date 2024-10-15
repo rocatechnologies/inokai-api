@@ -570,7 +570,7 @@ if (formattedHora_Entrada == "10:00:00") {
 	  centerInfo: center._id,
 	});
   }
-  if (formattedHora_Entrada !== "10:00:00" && !== formattedHora_Salida == "22:00:00") {
+  if (formattedHora_Entrada !== "10:00:00" && formattedHora_Salida !== "22:00:00") {
 	appointments.push({
 	  clientName: "Fuera de horario",
 	  clientPhone: "Fuera de horario",
