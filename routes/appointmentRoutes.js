@@ -479,8 +479,8 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
                     clientName: Hora_Entrada,
                     clientPhone: Hora_Entrada,
                     date: dateString,
-                    initTime: "09:00:00",
-                    finalTime: "23:00:00",
+                    initTime: "10:00:00",
+                    finalTime: "22:00:00",
                     userInfo: user._id,
                     centerInfo: center._id,
                 };
@@ -488,8 +488,8 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
                 // Verificar duplicados antes de insertar
                 const existingAppointment = await appointmentModel.findOne({
                     date: dateString,
-                    initTime: "09:00:00",
-                    finalTime: "23:00:00",
+                    initTime: "10:00:00",
+                    finalTime: "22:00:00",
                     userInfo: user._id,
                 });
 
@@ -522,25 +522,25 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 
             const appointments = [];
 
-          if (Hora_Entrada !== "09:00:00") {
+          if (Hora_Entrada !== "10:00:00") {
             appointments.push({
               clientName: "Fuera de horario",
               clientPhone: "Fuera de horario",
               date: dateString,
-              initTime: "09:00:00",
+              initTime: "10:00:00",
               finalTime: formattedHora_Entrada,
               userInfo: user._id,
               centerInfo: center._id,
             });
           }
 
-          if (Hora_Salida !== "23:00:00") {
+          if (Hora_Salida !== "22:00:00") {
             appointments.push({
               clientName: "Fuera de horario",
               clientPhone: "Fuera de horario",
               date: dateString,
               initTime: formattedHora_Salida,
-              finalTime: "23:00:00",
+              finalTime: "22:00:00",
               userInfo: user._id,
               centerInfo: center._id,
             });
