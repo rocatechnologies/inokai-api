@@ -1,3 +1,4 @@
+
 import express from "express";
 import mongoose from "mongoose";
 import User from "../models/userModels.js";
@@ -404,8 +405,9 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 	console.log('en generar horarios')
 
 	
-    const results = req.body; 
+const results = req.body; 
 	const { dateToDelete } = req.query;
+	const { centerId } = req.query;
     let filasProcesadas = 0;
     const citasPorEmpleado = {};
 
@@ -415,25 +417,6 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
     const userModel = db.model("User", User.schema);
 
     try {
-		// Verifica si hay una fecha proporcionada en la query para borrar las citas del mes
-		// if (dateToDelete) {
-		// 	const momentDate = moment.tz(dateToDelete, "MM/DD/YYYY", "Europe/Madrid");
-			
-		// 	// Calcular el primer y último día del mes de la fecha proporcionada
-		// 	const startOfMonth = momentDate.clone().startOf('month').format("MM/DD/YYYY");
-		// 	const endOfMonth = momentDate.clone().endOf('month').format("MM/DD/YYYY");
-			
-		// 	// Eliminar todas las citas entre esas fechas
-		// 	await appointmentModel.deleteMany({
-		// 		date: {
-		// 			$gte: startOfMonth,
-		// 			$lte: endOfMonth
-		// 		}
-		// 	});
-
-		// 	console.log(`Citas del mes de ${startOfMonth} a ${endOfMonth} eliminadas correctamente.`);
-		// }
-
 
 		if (dateToDelete) {
 			console.log('en la de eliminar')
@@ -449,10 +432,11 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
                     $gte: startOfMonth,
                     $lte: endOfMonth
                 },
-                clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
+                clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] },
+				centerInfo: centerId
             });
 
-            console.log(`Citas con "Libre", "Baja", etc. eliminadas entre ${startOfMonth} y ${endOfMonth} correctamente.`);
+            console.log(`Citas con "Libre", "Baja", etc. del centro ${centerId} eliminadas entre ${startOfMonth} y ${endOfMonth} correctamente.`);
         }
 
 
@@ -460,13 +444,18 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
         for (const row of results) {
             filasProcesadas++;
 
-            const {
-                ID_Trabajador,
-                Fecha,
-                Hora_Entrada,
-                Hora_Salida,
-            } = row;
-
+			const {
+				ID_Trabajador,
+				Fecha,
+				Hora_Entrada,
+				Hora_Salida,
+			} = {
+				ID_Trabajador: row.ID_Trabajador?.trim(),
+				Fecha: row.Fecha?.trim(),
+				Hora_Entrada: row.Hora_Entrada?.trim(),
+				Hora_Salida: row.Hora_Salida?.trim(),
+			};
+			
             if (!ID_Trabajador || ID_Trabajador.trim() === "") {
                 // console.log("ID_Trabajador no definido:", row);
                 continue;
@@ -494,8 +483,8 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
                     clientName: Hora_Entrada,
                     clientPhone: Hora_Entrada,
                     date: dateString,
-                    initTime: "09:00:00",
-                    finalTime: "23:00:00",
+                    initTime: "10:00:00",
+                    finalTime: "22:00:00",
                     userInfo: user._id,
                     centerInfo: center._id,
                 };
@@ -503,8 +492,8 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
                 // Verificar duplicados antes de insertar
                 const existingAppointment = await appointmentModel.findOne({
                     date: dateString,
-                    initTime: "09:00:00",
-                    finalTime: "23:00:00",
+                    initTime: "10:00:00",
+                    finalTime: "22:00:00",
                     userInfo: user._id,
                 });
 
@@ -537,25 +526,25 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 
             const appointments = [];
 
-          if (Hora_Entrada !== "09:00:00") {
+          if (formattedHora_Entrada !== "10:00:00") {
             appointments.push({
               clientName: "Fuera de horario",
               clientPhone: "Fuera de horario",
               date: dateString,
-              initTime: "09:00:00",
+              initTime: "10:00:00",
               finalTime: formattedHora_Entrada,
               userInfo: user._id,
               centerInfo: center._id,
             });
           }
 
-          if (Hora_Salida !== "23:00:00") {
+          if (formattedHora_Salida !== "22:00:00") {
             appointments.push({
               clientName: "Fuera de horario",
               clientPhone: "Fuera de horario",
               date: dateString,
               initTime: formattedHora_Salida,
-              finalTime: "23:00:00",
+              finalTime: "22:00:00",
               userInfo: user._id,
               centerInfo: center._id,
             });
@@ -595,5 +584,3 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 
 
 export default appointmentRouter;
-
-
