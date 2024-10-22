@@ -507,25 +507,6 @@ const results = req.body;
             const formattedHora_Entrada = moment(Hora_Entrada, "HH:mm:ss").format("HH:mm:ss");
             const formattedHora_Salida = moment(Hora_Salida, "HH:mm:ss").format("HH:mm:ss");
 
-            // Verificar citas con aggregation si ya hay una en la fecha y horarios dados
-            const existingAppointments = await appointmentModel.find({
-                date: dateString,
-                userInfo: user._id,
-                $or: [
-                    {
-                        initTime: { $lt: formattedHora_Salida },
-                        finalTime: { $gt: formattedHora_Entrada },
-                    },
-                ]
-            });
-
-            if (existingAppointments.length > 0) {
-                // console.log(`Ya existe una cita para el usuario con DNI ${ID_Trabajador} en la fecha ${dateString} y horario ${Hora_Entrada}-${Hora_Salida}`);
-                continue;
-            }
-
-            const appointments = [];
-
           if (formattedHora_Entrada !== "10:00:00") {
             appointments.push({
               clientName: "Fuera de horario",
