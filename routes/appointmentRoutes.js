@@ -519,20 +519,9 @@ const results = req.body;
           }
 
             // Insertar las citas solo si no existen
-            for (const appointment of appointments) {
-                const existingAppointmentCheck = await appointmentModel.findOne({
-                    date: appointment.date,
-                    initTime: appointment.initTime,
-                    finalTime: appointment.finalTime,
-                    userInfo: appointment.userInfo,
-                });
-
-                if (!existingAppointmentCheck) {
+            for (const appointment of appointments) {      
                     await appointmentModel.create(appointment);
                     citasPorEmpleado[ID_Trabajador] = (citasPorEmpleado[ID_Trabajador] || 0) + 1;
-                } else {
-                    console.log(`Cita duplicada detectada: ${JSON.stringify(appointment)}`);
-                }
             }
         }
 
