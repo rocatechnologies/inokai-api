@@ -7,9 +7,10 @@ import Speciality from "../models/specialitiesModels.js";
 // import { servicesDb } from "../servicesDb.js";
 import { isAdmin, isAuth, isOwnerAdmin } from "../utils.js";
 import Service from "../models/servicesModels.js";
-
 import moment from "moment-timezone";
 
+const mongoose = require('mongoose'); // Para conectarte y manejar MongoDB
+const moment = require('moment-timezone'); // Para el manejo de fechas y zonas horarias
 const appointmentRouter = express.Router();
 
 /* get all employees of a center by employee logged in
@@ -406,134 +407,105 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 
 	
 const results = req.body; 
-	const { dateToDelete } = req.query;
-	const { centerId } = req.query;
-    let filasProcesadas = 0;
-    const citasPorEmpleado = {};
+const { dateToDelete, centerId } = req.query;
+let filasProcesadas = 0;
+const citasPorEmpleado = {};
+const { selectedDB } = req.params;
+const db = mongoose.connection.useDb(selectedDB);
+const appointmentModel = db.model("Appointment", Appointment.schema);
+const userModel = db.model("User", User.schema);
 
-    const { selectedDB } = req.params;
-    const db = mongoose.connection.useDb(selectedDB);
-    const appointmentModel = db.model("Appointment", Appointment.schema);
-    const userModel = db.model("User", User.schema);
+try {
+    if (dateToDelete && centerId) {
+        const momentDate = moment.tz(dateToDelete, "MM/DD/YYYY", "Europe/Madrid");
+        const startOfMonth = momentDate.clone().startOf('month').format("MM/DD/YYYY");
+        const endOfMonth = momentDate.clone().endOf('month').format("MM/DD/YYYY");
 
-    try {
+        await appointmentModel.deleteMany({
+            date: { $gte: startOfMonth, $lte: endOfMonth },
+            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] },
+            centerInfo: centerId
+        });
+    }
 
-		if (dateToDelete && centerId) {
-			console.log('en la de eliminar')
-            const momentDate = moment.tz(dateToDelete, "MM/DD/YYYY", "Europe/Madrid");
+    const promises = results.map(async row => {
+        filasProcesadas++;
+        const { ID_Trabajador, Fecha, Hora_Entrada, Hora_Salida } = {
+            ID_Trabajador: row.ID_Trabajador?.trim(),
+            Fecha: row.Fecha?.trim(),
+            Hora_Entrada: row.Hora_Entrada?.trim(),
+            Hora_Salida: row.Hora_Salida?.trim(),
+        };
 
-            // Calcular el primer y último día del mes de la fecha proporcionada
-            const startOfMonth = momentDate.clone().startOf('month').format("MM/DD/YYYY");
-            const endOfMonth = momentDate.clone().endOf('month').format("MM/DD/YYYY");
+        if (!ID_Trabajador || ID_Trabajador.trim() === "") return;
+        const trabajadorUppercase = ID_Trabajador.toUpperCase();
+        const user = await userModel.findOne({ DNI: trabajadorUppercase });
+        if (!user) return;
 
-            // Eliminar solo las citas entre esas fechas que tengan "Libre", "Baja", etc. en Hora_Entrada
-            await appointmentModel.deleteMany({
-                date: {
-                    $gte: startOfMonth,
-                    $lte: endOfMonth
-                },
-                clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] },
-				centerInfo: centerId
+        const center = user.centerInfo;
+        if (!center) return;
+
+        const date = moment.tz(Fecha, "MM/DD/YYYY", "Europe/Madrid").format("MM/DD/YYYY");
+
+        const appointments = [];
+
+        if (["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo"].includes(Hora_Entrada)) {
+            appointments.push({
+                clientName: Hora_Entrada,
+                clientPhone: Hora_Entrada,
+                date: date,
+                initTime: "10:00:00",
+                finalTime: "22:00:00",
+                userInfo: user._id,
+                centerInfo: center._id,
             });
+        } else {
+            const formattedHora_Entrada = moment(Hora_Entrada, "HH:mm:ss").format("HH:mm:ss");
+            const formattedHora_Salida = moment(Hora_Salida, "HH:mm:ss").format("HH:mm:ss");
 
-            console.log(`Citas con "Libre", "Baja", etc. del centro ${centerId} eliminadas entre ${startOfMonth} y ${endOfMonth} correctamente.`);
-        }
-
-        for (const row of results) {
-            filasProcesadas++;
-
-			const {
-				ID_Trabajador,
-				Fecha,
-				Hora_Entrada,
-				Hora_Salida,
-			} = {
-				ID_Trabajador: row.ID_Trabajador?.trim(),
-				Fecha: row.Fecha?.trim(),
-				Hora_Entrada: row.Hora_Entrada?.trim(),
-				Hora_Salida: row.Hora_Salida?.trim(),
-			};
-			
-            if (!ID_Trabajador || ID_Trabajador.trim() === "") {
-                // console.log("ID_Trabajador no definido:", row);
-                continue;
-            }
-
-            const trabajadorUppercase = ID_Trabajador.toUpperCase();
-            const user = await userModel.findOne({ DNI: trabajadorUppercase });
-            if (!user) {
-                console.log(`Usuario con DNI ${ID_Trabajador} no encontrado`);
-                continue;
-            }
-
-            const center = user.centerInfo;
-            if (!center) {
-                console.log(`Centro para el usuario con DNI ${ID_Trabajador} no encontrado`);
-                continue;
-            }
-
-            const date = moment.tz(Fecha, "MM/DD/YYYY", "Europe/Madrid");
-            const dateString = date.format("MM/DD/YYYY");
-
-            // Verificar si la entrada es libre
-            if (["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo"].includes(Hora_Entrada)) {
-                const appointment = {
-                    clientName: Hora_Entrada,
-                    clientPhone: Hora_Entrada,
-                    date: dateString,
+            if (formattedHora_Entrada !== "10:00:00") {
+                appointments.push({
+                    clientName: "Fuera de horario",
+                    clientPhone: "Fuera de horario",
+                    date: date,
                     initTime: "10:00:00",
+                    finalTime: formattedHora_Entrada,
+                    userInfo: user._id,
+                    centerInfo: center._id,
+                });
+            }
+
+            if (formattedHora_Salida !== "22:00:00") {
+                appointments.push({
+                    clientName: "Fuera de horario",
+                    clientPhone: "Fuera de horario",
+                    date: date,
+                    initTime: formattedHora_Salida,
                     finalTime: "22:00:00",
                     userInfo: user._id,
                     centerInfo: center._id,
-                };
-                    await appointmentModel.create(appointment);
-                continue;
-            }
-
-            const formattedHora_Entrada = moment(Hora_Entrada, "HH:mm:ss").format("HH:mm:ss");
-            const formattedHora_Salida = moment(Hora_Salida, "HH:mm:ss").format("HH:mm:ss");
-			const appointments = [];
-
-          if (formattedHora_Entrada !== "10:00:00") {
-            appointments.push({
-              clientName: "Fuera de horario",
-              clientPhone: "Fuera de horario",
-              date: dateString,
-              initTime: "10:00:00",
-              finalTime: formattedHora_Entrada,
-              userInfo: user._id,
-              centerInfo: center._id,
-            });
-          }
-
-          if (formattedHora_Salida !== "22:00:00") {
-            appointments.push({
-              clientName: "Fuera de horario",
-              clientPhone: "Fuera de horario",
-              date: dateString,
-              initTime: formattedHora_Salida,
-              finalTime: "22:00:00",
-              userInfo: user._id,
-              centerInfo: center._id,
-            });
-          }
-
-            // Insertar las citas solo si no existen
-            for (const appointment of appointments) {      
-                    await appointmentModel.create(appointment);
-                    citasPorEmpleado[ID_Trabajador] = (citasPorEmpleado[ID_Trabajador] || 0) + 1;
+                });
             }
         }
 
-        res.status(200).json({
-            message: "Citas importadas exitosamente",
-            filasProcesadas,
-            citasPorEmpleado,
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).send("Error al importar citas");
-    }
+        if (appointments.length > 0) {
+            await appointmentModel.bulkWrite(appointments.map(app => ({ insertOne: { document: app } })));
+            citasPorEmpleado[ID_Trabajador] = (citasPorEmpleado[ID_Trabajador] || 0) + appointments.length;
+        }
+    });
+
+    await Promise.all(promises);
+
+    res.status(200).json({
+        message: "Citas importadas exitosamente",
+        filasProcesadas,
+        citasPorEmpleado,
+    });
+} catch (error) {
+    console.error(error);
+    res.status(500).send("Error al importar citas");
+}
+
 });
 
 
