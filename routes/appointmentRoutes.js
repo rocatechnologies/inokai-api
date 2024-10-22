@@ -415,6 +415,7 @@ const results = req.body;
     const db = mongoose.connection.useDb(selectedDB);
     const appointmentModel = db.model("Appointment", Appointment.schema);
     const userModel = db.model("User", User.schema);
+	const appointments = [];
 
     try {
 
