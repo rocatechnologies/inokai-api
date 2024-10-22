@@ -415,11 +415,10 @@ const results = req.body;
     const db = mongoose.connection.useDb(selectedDB);
     const appointmentModel = db.model("Appointment", Appointment.schema);
     const userModel = db.model("User", User.schema);
-	const appointments = [];
 
     try {
 
-		if (dateToDelete) {
+		if (dateToDelete && centerId) {
 			console.log('en la de eliminar')
             const momentDate = moment.tz(dateToDelete, "MM/DD/YYYY", "Europe/Madrid");
 
@@ -487,24 +486,13 @@ const results = req.body;
                     userInfo: user._id,
                     centerInfo: center._id,
                 };
-
-                // Verificar duplicados antes de insertar
-                const existingAppointment = await appointmentModel.findOne({
-                    date: dateString,
-                    initTime: "10:00:00",
-                    finalTime: "22:00:00",
-                    userInfo: user._id,
-                });
-
-                if (!existingAppointment) {
                     await appointmentModel.create(appointment);
-                    citasPorEmpleado[ID_Trabajador] = (citasPorEmpleado[ID_Trabajador] || 0) + 1;
-                }
                 continue;
             }
 
             const formattedHora_Entrada = moment(Hora_Entrada, "HH:mm:ss").format("HH:mm:ss");
             const formattedHora_Salida = moment(Hora_Salida, "HH:mm:ss").format("HH:mm:ss");
+			const appointments = [];
 
           if (formattedHora_Entrada !== "10:00:00") {
             appointments.push({
