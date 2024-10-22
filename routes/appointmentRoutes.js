@@ -432,7 +432,7 @@ const results = req.body;
                     $gte: startOfMonth,
                     $lte: endOfMonth
                 },
-                clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] },
+                clientName: { $in: ["Libre", "Baja", "Compensado", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] },
 				centerInfo: centerId
             });
 
@@ -478,7 +478,7 @@ const results = req.body;
             const dateString = date.format("MM/DD/YYYY");
 
             // Verificar si la entrada es libre
-            if (["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo"].includes(Hora_Entrada)) {
+            if (["Libre", "Baja","Compensado", "Vacaciones", "Año Nuevo", "Reyes", "Festivo"].includes(Hora_Entrada)) {
                 const appointment = {
                     clientName: Hora_Entrada,
                     clientPhone: Hora_Entrada,
