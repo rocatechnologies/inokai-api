@@ -415,6 +415,7 @@ const results = req.body;
     const db = mongoose.connection.useDb(selectedDB);
     const appointmentModel = db.model("Appointment", Appointment.schema);
     const userModel = db.model("User", User.schema);
+	const appointments = [];
 
     try {
 
@@ -438,8 +439,6 @@ const results = req.body;
 
             console.log(`Citas con "Libre", "Baja", etc. del centro ${centerId} eliminadas entre ${startOfMonth} y ${endOfMonth} correctamente.`);
         }
-
-
 
         for (const row of results) {
             filasProcesadas++;
