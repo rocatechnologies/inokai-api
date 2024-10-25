@@ -9,8 +9,6 @@ import { isAdmin, isAuth, isOwnerAdmin } from "../utils.js";
 import Service from "../models/servicesModels.js";
 import moment from "moment-timezone";
 
-const mongoose = require('mongoose'); // Para conectarte y manejar MongoDB
-const moment = require('moment-timezone'); // Para el manejo de fechas y zonas horarias
 const appointmentRouter = express.Router();
 
 /* get all employees of a center by employee logged in
