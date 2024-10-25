@@ -486,11 +486,10 @@ userRouter.get("/get-all-employees/:selectedDB", isAuth, isAdmin, async (req, re
 		const users = await Users.find()
 			.populate("centerInfo", "centerName")
 			.exec();
-		// console.log(employees);
 
 		const userOutput = users.filter((item) => item.role != "admin");
 
-		// console.log(userOutput)
+		console.log(userOutput)
 		res.json(userOutput);
 	} catch (error) {
 		console.log(error);
