@@ -104,6 +104,7 @@ appointmentRouter.get(
 						email: userData.email,
 						name: userData.name,
 						user_id: userData._id,
+						profileImgUrl: userData.profileImgUrl
 					});
 				}
 			}
