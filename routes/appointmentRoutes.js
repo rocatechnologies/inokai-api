@@ -94,7 +94,7 @@ appointmentRouter.get(
 					cenetrInfo: data.centerInfo,
 					services: data.services,
 					remarks: data.remarks,
-					profileImgUrl: userData.profileImgUrl
+					profileImgUrl: data.["userInfo"]["profileImgUrl"]
 				};
 
 				appointments2.push(myObjet);
