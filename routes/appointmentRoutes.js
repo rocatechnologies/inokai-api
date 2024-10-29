@@ -108,6 +108,7 @@ appointmentRouter.get(
 					});
 				}
 			}
+			console.log(myObjet);
 
 			res.json({ appointments2, usersInAppointments });
 		} catch (error) {
