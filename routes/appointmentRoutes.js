@@ -94,11 +94,11 @@ appointmentRouter.get(
 					cenetrInfo: data.centerInfo,
 					services: data.services,
 					remarks: data.remarks,
-					profileImgUrl: data.["userInfo"]["profileImgUrl"]
+					profileImgUrl: data.userInfo.profileImgUrl
 				};
 
 				appointments2.push(myObjet);
-				console.log(myObjet);
+				console.log(data.userInfo);
 
 				if (!emailSet.has(userData.email)) {
 					emailSet.add(userData.email);
