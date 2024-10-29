@@ -106,9 +106,9 @@ appointmentRouter.get(
 						user_id: userData._id,
 						profileImgUrl: userData.profileImgUrl
 					});
+					console.log(userData);
 				}
 			}
-			console.log(userData);
 
 			res.json({ appointments2, usersInAppointments });
 		} catch (error) {
