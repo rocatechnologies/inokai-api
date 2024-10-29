@@ -15,13 +15,12 @@ const userSchema = new Schema({
     },
     services:[{}],
     specialities:[{ type: Schema.Types.ObjectId, ref: 'Speciality' }], //anado este nuevo campo para darle un nuevo atributo llamado especialidad
-
+    profileImgUrl: { type: String },
     isAvailable: { 
         type: String, 
         enum: ["yes", "no", "not applicable"],
         default: "yes"  // 'yes' para disponible, 'no' para no disponible, y 'not applicable' para roles que no sean employee
-    },
-    profileImgUrl: { type: String }
+    }
 
 });
 
