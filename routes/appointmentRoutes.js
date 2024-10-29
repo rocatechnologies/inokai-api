@@ -93,12 +93,10 @@ appointmentRouter.get(
 					user_id: data["userInfo"]["_id"],
 					cenetrInfo: data.centerInfo,
 					services: data.services,
-					remarks: data.remarks,
-					profileImgUrl: userData.profileImgUrl
+					remarks: data.remarks
 				};
 
 				appointments2.push(myObjet);
-				console.log(data.userInfo);
 
 				if (!emailSet.has(userData.email)) {
 					emailSet.add(userData.email);
@@ -110,6 +108,7 @@ appointmentRouter.get(
 					});
 				}
 			}
+			console.log(userData);
 
 			res.json({ appointments2, usersInAppointments });
 		} catch (error) {
