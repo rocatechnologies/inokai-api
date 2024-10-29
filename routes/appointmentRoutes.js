@@ -106,7 +106,7 @@ appointmentRouter.get(
 						user_id: userData._id,
 						profileImgUrl: userData.profileImgUrl
 					});
-					console.log(userData);
+					console.log(userData.profileImgUrl);
 				}
 			}
 
