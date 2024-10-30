@@ -60,6 +60,7 @@ userRouter.post("/login/:selectedDB", async (req, res) => {
 			role: isUserDb.role,
 			token: generarJWT(isUserDb._id),
 			company: selectedDB,
+			centerId: isUserDb.centerInfo
 		};
 
 		res.json(userAuthenticated);
