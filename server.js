@@ -17,6 +17,7 @@ server.use(cors());
 import userRouter from "./routes/userRoutes.js";
 import appointmentRouter from "./routes/appointmentRoutes.js";
 import settingRouter from "./routes/settingRoutes.js";
+import contactRouter from "./routes/contactsRoutes.js";
 import cronRouter from './routes/cronRoute.js'
 
 server.use('/api/cron', cronRouter)
