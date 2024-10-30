@@ -1,4 +1,4 @@
-// contactModel.js
+// contactsModel.js
 import mongoose from "mongoose";
 
 const { Schema } = mongoose;

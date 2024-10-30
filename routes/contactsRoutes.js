@@ -5,12 +5,17 @@ import { isAuth } from "../utils.js";
 
 const contactRouter = express.Router();
 
-//create
-contactRouter.post("/", isAuth, async (req, res) => {
+// Create a new contact
+contactRouter.post("/:selectedDB", isAuth, async (req, res) => {
     try {
+        const { selectedDB } = req.params; // Get the selected database
         const { centerIds, firstName, lastName, phone1, phone2, email, observations } = req.body;
 
-        const newContact = new Contact({
+        // Select the database
+        const db = mongoose.connection.useDb(selectedDB);
+        const ContactModel = db.model("Contact", Contact.schema); // Use the schema directly
+
+        const newContact = new ContactModel({
             centerIds,
             firstName,
             lastName,
@@ -18,7 +23,7 @@ contactRouter.post("/", isAuth, async (req, res) => {
             phone2,
             email,
             observations,
-            editable: true // Default value, can be changed based on your requirements
+            editable: true // Default value
         });
 
         const savedContact = await newContact.save();
@@ -29,7 +34,7 @@ contactRouter.post("/", isAuth, async (req, res) => {
     }
 });
 
-//getall
+// Get all contacts by centerId
 contactRouter.get("/:selectedDB", isAuth, async (req, res) => {
     try {
         const { selectedDB } = req.params;
@@ -37,7 +42,7 @@ contactRouter.get("/:selectedDB", isAuth, async (req, res) => {
 
         // Select the database
         const db = mongoose.connection.useDb(selectedDB);
-        const ContactModel = db.model("Contact", Contact.schema);
+        const ContactModel = db.model("Contact", Contact.schema); // Use the schema directly
 
         const contacts = await ContactModel.find({ centerIds: centerId }); // Find contacts by centerId
         res.json(contacts);
@@ -47,12 +52,12 @@ contactRouter.get("/:selectedDB", isAuth, async (req, res) => {
     }
 });
 
-//update
+// Update a contact
 contactRouter.put("/:selectedDB/:contactId", isAuth, async (req, res) => {
     try {
-        const { selectedDB, contactId } = req.params;
+        const { selectedDB, contactId } = req.params; // Get the selected database and contactId
         const db = mongoose.connection.useDb(selectedDB);
-        const ContactModel = db.model("Contact", Contact.schema);
+        const ContactModel = db.model("Contact", Contact.schema); // Use the schema directly
 
         const updatedContact = await ContactModel.findByIdAndUpdate(contactId, req.body, { new: true });
         
@@ -66,12 +71,13 @@ contactRouter.put("/:selectedDB/:contactId", isAuth, async (req, res) => {
         res.status(500).json({ message: "Error updating contact" });
     }
 });
-//borrar
+
+// Delete a contact
 contactRouter.delete("/:selectedDB/:contactId", isAuth, async (req, res) => {
     try {
-        const { selectedDB, contactId } = req.params;
+        const { selectedDB, contactId } = req.params; // Get the selected database and contactId
         const db = mongoose.connection.useDb(selectedDB);
-        const ContactModel = db.model("Contact", Contact.schema);
+        const ContactModel = db.model("Contact", Contact.schema); // Use the schema directly
 
         const deletedContact = await ContactModel.findByIdAndDelete(contactId);
         
