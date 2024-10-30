@@ -9,14 +9,14 @@ const contactRouter = express.Router();
 contactRouter.post("/:selectedDB", isAuth, async (req, res) => {
     try {
         const { selectedDB } = req.params; // Get the selected database
-        const { centerIds, firstName, lastName, phone1, phone2, email, observations } = req.body;
+        const { centerInfo, firstName, lastName, phone1, phone2, email, observations } = req.body;
 
         // Select the database
         const db = mongoose.connection.useDb(selectedDB);
         const ContactModel = db.model("Contact", Contact.schema); // Use the schema directly
 
         const newContact = new ContactModel({
-            centerIds,
+            centerInfo,
             firstName,
             lastName,
             phone1,
@@ -38,13 +38,13 @@ contactRouter.post("/:selectedDB", isAuth, async (req, res) => {
 contactRouter.get("/:selectedDB", isAuth, async (req, res) => {
     try {
         const { selectedDB } = req.params;
-        const { centerId } = req.query; // Get centerId from query parameters
+        const { centerInfo } = req.query; // Get centerId from query parameters
 
         // Select the database
         const db = mongoose.connection.useDb(selectedDB);
         const ContactModel = db.model("Contact", Contact.schema); // Use the schema directly
 
-        const contacts = await ContactModel.find({ centerIds: centerId }); // Find contacts by centerId
+        const contacts = await ContactModel.find({ centerInfo: centerInfo }); // Find contacts by centerId
         res.json(contacts);
     } catch (error) {
         console.error(error);
