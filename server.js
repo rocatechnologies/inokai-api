@@ -24,6 +24,7 @@ server.use('/api/cron', cronRouter)
 server.use("/api/users", userRouter);
 server.use('/api/appointment', appointmentRouter)
 server.use('/api/settings', settingRouter)
+server.use('/api/contacts', contactRouter)
 
 mongoose.set("strictQuery", false);
 mongoose
