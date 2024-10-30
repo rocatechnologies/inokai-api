@@ -34,7 +34,7 @@ contactRouter.post("/:selectedDB", isAuth, async (req, res) => {
     }
 });
 
-// Get all contacts by centerId
+// Get all contacts by centerInfo
 contactRouter.get("/:selectedDB", isAuth, async (req, res) => {
     try {
         const { selectedDB } = req.params;
@@ -45,6 +45,23 @@ contactRouter.get("/:selectedDB", isAuth, async (req, res) => {
         const ContactModel = db.model("Contact", Contact.schema); // Use the schema directly
 
         const contacts = await ContactModel.find({ centerInfo: centerInfo }); // Find contacts by centerId
+        res.json(contacts);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error fetching contacts" });
+    }
+});
+
+// Get all contacts 
+contactRouter.get("/:selectedDB/all", isAuth, async (req, res) => {
+    try {
+        const { selectedDB } = req.params;
+
+        // Select the database
+        const db = mongoose.connection.useDb(selectedDB);
+        const ContactModel = db.model("Contact", Contact.schema); // Use the schema directly
+
+        const contacts = await ContactModel.find();
         res.json(contacts);
     } catch (error) {
         console.error(error);
