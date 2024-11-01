@@ -18,6 +18,7 @@ import userRouter from "./routes/userRoutes.js";
 import appointmentRouter from "./routes/appointmentRoutes.js";
 import settingRouter from "./routes/settingRoutes.js";
 import contactRouter from "./routes/contactsRoutes.js";
+import noteRouter from "./routes/notesRoutes.js";
 import cronRouter from './routes/cronRoute.js'
 
 server.use('/api/cron', cronRouter)
@@ -25,6 +26,7 @@ server.use("/api/users", userRouter);
 server.use('/api/appointment', appointmentRouter)
 server.use('/api/settings', settingRouter)
 server.use('/api/contacts', contactRouter)
+server.use('/api/notes', noteRouter)
 
 mongoose.set("strictQuery", false);
 mongoose
