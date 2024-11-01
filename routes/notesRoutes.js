@@ -1,7 +1,7 @@
 // notesRoutes.js
 import express from "express";
 import mongoose from "mongoose";
-import Note from "../models/notesModel.js";
+import Note from "../models/notesModels.js";
 import { isAuth } from "../utils.js";
 
 const noteRouter = express.Router();
