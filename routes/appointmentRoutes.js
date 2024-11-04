@@ -383,8 +383,8 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 			searchCriteria.clientPhone = { $regex: new RegExp(clientPhone, "i") }; // 'i' para que sea case-insensitive
 		}
 
-		if (req.user.centerInfo) {
-			searchCriteria.centerInfo = req.user.centerInfo; // 'i' para que sea case-insensitive
+		if (req.centerInfo) {
+			searchCriteria.centerInfo = req.centerInfo; // 'i' para que sea case-insensitive
 		} else {
 			// console.log('aqui')
 			searchCriteria.centerInfo = centerInfo;
