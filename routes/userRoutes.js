@@ -380,6 +380,7 @@ userRouter.post("/create-employee/:selectedDB/:centerId", isAuth, isAdmin, async
 			specialities,
 			role: "employee",
 			centerInfo: centerId,
+			profileImgUrl: profileImgUrl
 		});
 
 		const centers = await Centers.findById(centerId);
@@ -399,7 +400,8 @@ userRouter.put("/edit-employee/:selectedDB/:employeeId", isAuth, isAdmin, async 
 	console.log("en editar empleado");
 	try {
 		const { selectedDB, employeeId } = req.params;
-
+        console.log(User.schema);
+		console.log(req.body);
 		const db = mongoose.connection.useDb(selectedDB);
 		const UserModel = db.model("User", User.schema);
 		const Services = db.model("Service", Service.schema)
