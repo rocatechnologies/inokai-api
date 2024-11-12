@@ -436,10 +436,10 @@ try {
             Hora_Salida: row.Hora_Salida?.trim(),
         };
 
-        if (!ID_Trabajador || ID_Trabajador.trim() === "") return;
-        const trabajadorUppercase = ID_Trabajador.toUpperCase();
-        const user = await userModel.findOne({ DNI: trabajadorUppercase });
-        if (!user) return;
+		if (!ID_Trabajador || ID_Trabajador.trim() === "") return;
+		const trabajador = ID_Trabajador.trim();
+		const user = await userModel.findOne({ DNI: { $regex: `^${trabajador}$`, $options: 'i' } });
+		if (!user) return;
 
         const center = user.centerInfo;
         if (!center) return;
