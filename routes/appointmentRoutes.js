@@ -260,7 +260,7 @@ appointmentRouter.post(
 				userInfo: userId,
 				centerInfo: req.user.centerInfo,
 				remarks,
-				createdBy: "web"
+				createdBy: "manual"
 			});
 
 			res.json({ message: "cita creada exitosamente" });
