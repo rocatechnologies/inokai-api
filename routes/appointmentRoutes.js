@@ -93,7 +93,8 @@ appointmentRouter.get(
 					user_id: data["userInfo"]["_id"],
 					cenetrInfo: data.centerInfo,
 					services: data.services,
-					remarks: data.remarks
+					remarks: data.remarks,
+					createdBy: data.createdBy
 				};
 
 				appointments2.push(myObjet);
@@ -259,6 +260,7 @@ appointmentRouter.post(
 				userInfo: userId,
 				centerInfo: req.user.centerInfo,
 				remarks,
+				createdBy: "web"
 			});
 
 			res.json({ message: "cita creada exitosamente" });
