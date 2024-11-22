@@ -402,6 +402,88 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 	}
 });
 
+// Endpoint para establecer un horario manual
+appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
+    console.log("En horario manual");
+
+    const { date, employee, startTime, endTime } = req.body;
+    const { selectedDB } = req.params;
+
+    const db = mongoose.connection.useDb(selectedDB);
+    const appointmentModel = db.model("Appointment", Appointment.schema);
+    const userModel = db.model("User", User.schema);
+
+    try {
+        // Validar entrada
+        if (!date || !employee || !startTime || !endTime) {
+            return res.status(400).json({ message: "Todos los campos son obligatorios" });
+        }
+
+        // Obtener el usuario
+        const user = await userModel.findById(employee);
+        if (!user) {
+            return res.status(404).json({ message: "Empleado no encontrado" });
+        }
+
+        const centerId = user.centerInfo;
+
+        if (!centerId) {
+            return res.status(404).json({ message: "Centro no asignado al empleado" });
+        }
+
+        const formattedDate = moment.tz(date, "MM/DD/YYYY", "Europe/Madrid").format("MM/DD/YYYY");
+
+        // Borrar citas existentes para ese día y empleado
+        await appointmentModel.deleteMany({
+            date: formattedDate,
+            userInfo: employee,
+            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
+        });
+
+        // Crear nuevas citas basadas en horario
+        const appointments = [];
+        const formattedStartTime = moment(startTime, "HH:mm:ss").format("HH:mm:ss");
+        const formattedEndTime = moment(endTime, "HH:mm:ss").format("HH:mm:ss");
+
+        if (formattedStartTime !== "10:00:00") {
+            appointments.push({
+                clientName: "Fuera de horario",
+                clientPhone: "Fuera de horario",
+                date: formattedDate,
+                initTime: "10:00:00",
+                finalTime: formattedStartTime,
+                userInfo: user._id,
+                centerInfo: centerId
+            });
+        }
+
+        if (formattedEndTime !== "22:00:00") {
+            appointments.push({
+                clientName: "Fuera de horario",
+                clientPhone: "Fuera de horario",
+                date: formattedDate,
+                initTime: formattedEndTime,
+                finalTime: "22:00:00",
+                userInfo: user._id,
+                centerInfo: centerId
+            });
+        }
+
+        if (appointments.length > 0) {
+            await appointmentModel.bulkWrite(appointments.map(app => ({ insertOne: { document: app } })));
+        }
+
+        res.status(200).json({
+            message: "Horario manual establecido correctamente",
+            citasCreadas: appointments.length
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Error al establecer el horario manual");
+    }
+});
+
+
 // Endpoint para importar el CSV y crear las citas
 // recibe un query que es una fecha y hay que borrar todas las citas en esa fecha
 appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
