@@ -483,6 +483,93 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
     }
 });
 
+appointmentRouter.post("/intercambio-horarios/:selectedDB", async (req, res) => {
+    console.log("En intercambio de horarios");
+
+    const { employee1, employee2, date1, date2 } = req.body;
+    const { selectedDB } = req.params;
+
+    const db = mongoose.connection.useDb(selectedDB);
+    const appointmentModel = db.model("Appointment", Appointment.schema);
+    const userModel = db.model("User", User.schema);
+
+    try {
+        // Validar entrada
+        if (!employee1 || !employee2 || !date1 || !date2) {
+            return res.status(400).json({ message: "Todos los campos son obligatorios" });
+        }
+
+        // Validar usuarios
+        const user1 = await userModel.findById(employee1);
+        const user2 = await userModel.findById(employee2);
+
+        if (!user1 || !user2) {
+            return res.status(404).json({ message: "Uno o ambos empleados no encontrados" });
+        }
+
+        // Formatear fechas
+        const formattedDate1 = moment.tz(date1, "MM/DD/YYYY", "Europe/Madrid").format("MM/DD/YYYY");
+        const formattedDate2 = moment.tz(date2, "MM/DD/YYYY", "Europe/Madrid").format("MM/DD/YYYY");
+
+        // Filtrar citas relevantes para ambos empleados y días
+        const appointmentsEmployee1 = await appointmentModel.find({
+            date: formattedDate1,
+            userInfo: employee1,
+            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
+        });
+
+        const appointmentsEmployee2 = await appointmentModel.find({
+            date: formattedDate2,
+            userInfo: employee2,
+            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
+        });
+
+        // Validar que haya citas para intercambiar
+        if (appointmentsEmployee1.length === 0 || appointmentsEmployee2.length === 0) {
+            return res.status(404).json({ message: "No hay citas disponibles para intercambiar" });
+        }
+
+        // Cambiar los días y empleados de las citas
+        const updatedAppointments1 = appointmentsEmployee1.map(app => ({
+            ...app._doc,
+            date: formattedDate2,
+            userInfo: employee2,
+            centerInfo: user2.centerInfo // Cambiar el centro si es diferente
+        }));
+
+        const updatedAppointments2 = appointmentsEmployee2.map(app => ({
+            ...app._doc,
+            date: formattedDate1,
+            userInfo: employee1,
+            centerInfo: user1.centerInfo // Cambiar el centro si es diferente
+        }));
+
+        // Eliminar las citas antiguas
+        await appointmentModel.deleteMany({
+            $or: [
+                { date: formattedDate1, userInfo: employee1 },
+                { date: formattedDate2, userInfo: employee2 }
+            ]
+        });
+
+        // Insertar las nuevas citas actualizadas
+        await appointmentModel.insertMany([...updatedAppointments1, ...updatedAppointments2]);
+
+        res.status(200).json({
+            message: "Intercambio de horarios realizado correctamente",
+            citasIntercambiadas: {
+                empleado1: updatedAppointments1.length,
+                empleado2: updatedAppointments2.length
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Error al realizar el intercambio de horarios");
+    }
+});
+
+
+
 
 // Endpoint para importar el CSV y crear las citas
 // recibe un query que es una fecha y hay que borrar todas las citas en esa fecha
