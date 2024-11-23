@@ -307,14 +307,8 @@ userRouter.delete("/databases/:dbName", isOwnerAdmin, async (req, res) => {
 	}
 });
 
-
-
-
-
-///////////// ENDPOINTS PARA ADMIN NORMAL(gerente de una empresa y sus centros)
-
 //get all centers
-userRouter.get("/get-all-centers/:selectedDB", isAuth, isAdmin, async (req, res) => {
+userRouter.get("/get-all-centers/:selectedDB", isAuth, async (req, res) => {
 	console.log("en coseguir todos los centros");
 	try {
 		const { selectedDB } = req.params;
@@ -333,6 +327,9 @@ userRouter.get("/get-all-centers/:selectedDB", isAuth, isAdmin, async (req, res)
 		res.json({ message: "error en el servidor" });
 	}
 });
+
+
+///////////// ENDPOINTS PARA ADMIN NORMAL(gerente de una empresa y sus centros)
 
 //create empleado en el centro
 userRouter.post("/create-employee/:selectedDB/:centerId", isAuth, isAdmin, async (req, res) => {
