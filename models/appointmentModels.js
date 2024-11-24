@@ -19,7 +19,9 @@ const appointmentSchema = new Schema({
     services:[{}],
 
     remarks: {type:String},
-    createdBy: { type: String }
+    createdBy: { type: String},
+    status: {type: String},
+    createdAt: {type: String}
 
 });
 
