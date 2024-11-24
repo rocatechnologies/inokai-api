@@ -94,7 +94,10 @@ appointmentRouter.get(
 					cenetrInfo: data.centerInfo,
 					services: data.services,
 					remarks: data.remarks,
-					createdBy: data.createdBy
+					createdBy: data.createdBy,
+					createdAt: data.createdAt,
+					status: data.status
+
 				};
 
 				appointments2.push(myObjet);
@@ -260,7 +263,9 @@ appointmentRouter.post(
 				userInfo: userId,
 				centerInfo: req.user.centerInfo,
 				remarks,
-				createdBy: "manual"
+				createdBy: "Manual",
+				createdAt: "",
+				status: "confirmed"
 			});
 
 			res.json({ message: "cita creada exitosamente" });
@@ -403,12 +408,15 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 	}
 });
 
-// Endpoint para establecer un horario manual
 appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
-    console.log("En horario manual");
-
-    const { date, employee, startTime, endTime } = req.body;
+    console.log("=== En horario manual ===");
+    
+    const { date, employee, startTime, endTime, type } = req.body; // Añadimos el campo type
     const { selectedDB } = req.params;
+
+    console.log("Entrada recibida:");
+    console.log("Database seleccionada:", selectedDB);
+    console.log("Datos del body:", { date, employee, startTime, endTime, type });
 
     const db = mongoose.connection.useDb(selectedDB);
     const appointmentModel = db.model("Appointment", Appointment.schema);
@@ -417,72 +425,111 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
     try {
         // Validar entrada
         if (!date || !employee || !startTime || !endTime) {
+            console.log("Faltan datos obligatorios:", { date, employee, startTime, endTime });
             return res.status(400).json({ message: "Todos los campos son obligatorios" });
         }
 
         // Obtener el usuario
+        console.log("Buscando usuario con ID:", employee);
         const user = await userModel.findById(employee);
         if (!user) {
+            console.log("Usuario no encontrado.");
             return res.status(404).json({ message: "Empleado no encontrado" });
         }
 
-        const centerId = user.centerInfo;
+        console.log("Usuario encontrado:", user);
 
+        const centerId = user.centerInfo;
         if (!centerId) {
+            console.log("Centro no asignado al empleado.");
             return res.status(404).json({ message: "Centro no asignado al empleado" });
         }
 
+        console.log("Centro asignado al empleado:", centerId);
+
         const formattedDate = moment.tz(date, "MM/DD/YYYY", "Europe/Madrid").format("MM/DD/YYYY");
+        console.log("Fecha formateada:", formattedDate);
 
         // Borrar citas existentes para ese día y empleado
+        console.log("Eliminando citas existentes para el día:", formattedDate);
         await appointmentModel.deleteMany({
             date: formattedDate,
             userInfo: employee,
             clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
         });
+        console.log("Citas eliminadas para el empleado en la fecha especificada.");
 
         // Crear nuevas citas basadas en horario
         const appointments = [];
         const formattedStartTime = moment(startTime, "HH:mm:ss").format("HH:mm:ss");
         const formattedEndTime = moment(endTime, "HH:mm:ss").format("HH:mm:ss");
 
-        if (formattedStartTime !== "10:00:00") {
+        console.log("Hora de inicio formateada:", formattedStartTime);
+        console.log("Hora de fin formateada:", formattedEndTime);
+
+        if (type) {
+            // Si type viene rellenado, crear una cita con ese tipo como clientName
+            console.log("Creando cita con tipo:", type);
             appointments.push({
-                clientName: "Fuera de horario",
-                clientPhone: "Fuera de horario",
+                clientName: type,
+                clientPhone: type,
                 date: formattedDate,
-                initTime: "10:00:00",
-                finalTime: formattedStartTime,
+                initTime: formattedStartTime,
+                finalTime: formattedEndTime,
                 userInfo: user._id,
                 centerInfo: centerId
             });
+        } else {
+            // Si type no viene, comportamiento predeterminado
+            console.log("Creando citas predeterminadas (Fuera de horario).");
+            if (formattedStartTime !== "10:00:00") {
+                console.log("Añadiendo cita 'Fuera de horario' antes de la hora de entrada.");
+                appointments.push({
+                    clientName: "Fuera de horario",
+                    clientPhone: "Fuera de horario",
+                    date: formattedDate,
+                    initTime: "10:00:00",
+                    finalTime: formattedStartTime,
+                    userInfo: user._id,
+                    centerInfo: centerId
+                });
+            }
+
+            if (formattedEndTime !== "22:00:00") {
+                console.log("Añadiendo cita 'Fuera de horario' después de la hora de salida.");
+                appointments.push({
+                    clientName: "Fuera de horario",
+                    clientPhone: "Fuera de horario",
+                    date: formattedDate,
+                    initTime: formattedEndTime,
+                    finalTime: "22:00:00",
+                    userInfo: user._id,
+                    centerInfo: centerId
+                });
+            }
         }
 
-        if (formattedEndTime !== "22:00:00") {
-            appointments.push({
-                clientName: "Fuera de horario",
-                clientPhone: "Fuera de horario",
-                date: formattedDate,
-                initTime: formattedEndTime,
-                finalTime: "22:00:00",
-                userInfo: user._id,
-                centerInfo: centerId
-            });
-        }
+        console.log("Citas preparadas para insertar:", appointments);
 
         if (appointments.length > 0) {
+            console.log("Insertando citas en la base de datos.");
             await appointmentModel.bulkWrite(appointments.map(app => ({ insertOne: { document: app } })));
+        } else {
+            console.log("No hay citas para insertar.");
         }
 
+        console.log("Proceso completado. Total citas creadas:", appointments.length);
         res.status(200).json({
             message: "Horario manual establecido correctamente",
             citasCreadas: appointments.length
         });
     } catch (error) {
-        console.error(error);
+        console.error("Error durante el proceso:", error);
         res.status(500).send("Error al establecer el horario manual");
     }
 });
+
+
 
 appointmentRouter.post("/intercambio-horarios/:selectedDB", async (req, res) => {
     console.log("En intercambio de horarios");
