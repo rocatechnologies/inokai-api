@@ -356,52 +356,64 @@ appointmentRouter.get("/get-specialities/:selectedDB", async (req, res) => {
 		res.json({ message: "error en el servidor" });
 	}
 });
-
-//este es en la parte del frontend para se abre un modal y se puede buscar una cita
 appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
-	console.log("endpoint filter");
+	console.log("🟢 Endpoint /filter hit");
 	try {
-		const { selectedDB } = req.params;
-		const { clientName, clientPhone, centerInfo } = req.query; // Obtener los parámetros de búsqueda desde el query
-
-		// Seleccionar la base de datos correspondiente
-		const db = mongoose.connection.useDb(selectedDB);
-		// const userModels = db.model("User", User.schema);
-
-		const appointmentModels = db.model("Appointment", Appointment.schema);
-
-		// Construir el filtro de búsqueda
-		let searchCriteria = {};
-
-		console.log(req.user.centerInfo);
-
-		// Si el query 'name' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
-		if (clientName) {
-			searchCriteria.clientName = { $regex: new RegExp(clientName, "i") }; // 'i' para que sea case-insensitive
-		}
-
-		// Si el query 'phone' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
-		if (clientPhone) {
-			searchCriteria.clientPhone = { $regex: new RegExp(clientPhone, "i") }; // 'i' para que sea case-insensitive
-		}
-
-		if (req.centerInfo && req.centerInfo.trim() !== "") {
-			// Assign centerInfo from the request if it exists and is not an empty string
-			searchCriteria.centerInfo = req.centerInfo;
-		  } else {
-			// Fallback to default centerInfo
-			searchCriteria.centerInfo = centerInfo;
-		  }
-
-		// Ejecutar la consulta con los criterios de búsqueda
-		const results = await appointmentModels.find(searchCriteria);
-
-		res.json(results); // Devolver los resultados filtrados
+	  const { selectedDB } = req.params;
+	  const { clientName, clientPhone, centerInfo } = req.query; // Obtener los parámetros de búsqueda desde el query
+	  console.log("📄 Params received:", { selectedDB });
+	  console.log("🔍 Query params received:", { clientName, clientPhone, centerInfo });
+  
+	  // Seleccionar la base de datos correspondiente
+	  console.log("🔗 Switching to database:", selectedDB);
+	  const db = mongoose.connection.useDb(selectedDB);
+  
+	  const appointmentModels = db.model("Appointment", Appointment.schema);
+  
+	  // Construir el filtro de búsqueda
+	  let searchCriteria = {};
+  
+	  console.log("🧑‍💻 User info from request:", req.user);
+	  console.log("🏢 User's centerInfo from request:", req.user.centerInfo);
+  
+	  // Si el query 'clientName' está presente, agregar al filtro
+	  if (clientName) {
+		console.log("✏️ Adding clientName to search criteria:", clientName);
+		searchCriteria.clientName = { $regex: new RegExp(clientName, "i") }; // 'i' para que sea case-insensitive
+	  }
+  
+	  // Si el query 'clientPhone' está presente, agregar al filtro
+	  if (clientPhone) {
+		console.log("✏️ Adding clientPhone to search criteria:", clientPhone);
+		searchCriteria.clientPhone = { $regex: new RegExp(clientPhone, "i") }; // 'i' para que sea case-insensitive
+	  }
+  
+	  // Verificar y asignar centerInfo al filtro
+	  if (centerInfo && centerInfo.trim() !== "") {
+		console.log("✏️ Adding centerInfo from query to search criteria:", centerInfo);
+		searchCriteria.centerInfo = centerInfo;
+	  } else if (req.user?.centerInfo) {
+		console.log("✏️ Fallback: Adding user's centerInfo to search criteria:", req.user.centerInfo);
+		searchCriteria.centerInfo = req.user.centerInfo;
+	  } else {
+		console.log("⚠️ No centerInfo provided or fallback available. Leaving out centerInfo.");
+	  }
+  
+	  console.log("🔍 Final search criteria:", JSON.stringify(searchCriteria, null, 2));
+  
+	  // Ejecutar la consulta con los criterios de búsqueda
+	  const results = await appointmentModels.find(searchCriteria);
+  
+	  console.log("✅ Query executed. Results found:", results.length);
+	  console.log("📄 First result (if any):", results[0]);
+  
+	  res.json(results); // Devolver los resultados filtrados
 	} catch (error) {
-		console.log(error);
-		res.json({ message: "error en el servidor" });
+	  console.log("❌ Error in /filter endpoint:", error);
+	  res.json({ message: "error en el servidor" });
 	}
-});
+  });
+  
 
 // Endpoint para establecer un horario manual
 appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
