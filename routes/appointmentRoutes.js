@@ -94,7 +94,10 @@ appointmentRouter.get(
 					cenetrInfo: data.centerInfo,
 					services: data.services,
 					remarks: data.remarks,
-					createdBy: data.createdBy
+					createdBy: data.createdBy,
+					createdAt: data.createdAt,
+					status: data.status
+
 				};
 
 				appointments2.push(myObjet);
@@ -260,7 +263,9 @@ appointmentRouter.post(
 				userInfo: userId,
 				centerInfo: req.user.centerInfo,
 				remarks,
-				createdBy: "manual"
+				createdBy: "Manual",
+				createdAt: "",
+				status: "confirmed"
 			});
 
 			res.json({ message: "cita creada exitosamente" });
@@ -385,12 +390,13 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 			searchCriteria.clientPhone = { $regex: new RegExp(clientPhone, "i") }; // 'i' para que sea case-insensitive
 		}
 
-		if (req.centerInfo) {
-			searchCriteria.centerInfo = req.centerInfo; // 'i' para que sea case-insensitive
-		} else {
-			// console.log('aqui')
+		if (req.centerInfo && req.centerInfo.trim() !== "") {
+			// Assign centerInfo from the request if it exists and is not an empty string
+			searchCriteria.centerInfo = req.centerInfo;
+		  } else {
+			// Fallback to default centerInfo
 			searchCriteria.centerInfo = centerInfo;
-		}
+		  }
 
 		// Ejecutar la consulta con los criterios de búsqueda
 		const results = await appointmentModels.find(searchCriteria);
