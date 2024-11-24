@@ -60,6 +60,7 @@ userRouter.post("/login/:selectedDB", async (req, res) => {
 			role: isUserDb.role,
 			token: generarJWT(isUserDb._id),
 			company: selectedDB,
+			centerId: isUserDb.centerInfo
 		};
 
 		res.json(userAuthenticated);
@@ -306,14 +307,8 @@ userRouter.delete("/databases/:dbName", isOwnerAdmin, async (req, res) => {
 	}
 });
 
-
-
-
-
-///////////// ENDPOINTS PARA ADMIN NORMAL(gerente de una empresa y sus centros)
-
 //get all centers
-userRouter.get("/get-all-centers/:selectedDB", isAuth, isAdmin, async (req, res) => {
+userRouter.get("/get-all-centers/:selectedDB", isAuth, async (req, res) => {
 	console.log("en coseguir todos los centros");
 	try {
 		const { selectedDB } = req.params;
@@ -332,6 +327,9 @@ userRouter.get("/get-all-centers/:selectedDB", isAuth, isAdmin, async (req, res)
 		res.json({ message: "error en el servidor" });
 	}
 });
+
+
+///////////// ENDPOINTS PARA ADMIN NORMAL(gerente de una empresa y sus centros)
 
 //create empleado en el centro
 userRouter.post("/create-employee/:selectedDB/:centerId", isAuth, isAdmin, async (req, res) => {
@@ -379,6 +377,7 @@ userRouter.post("/create-employee/:selectedDB/:centerId", isAuth, isAdmin, async
 			specialities,
 			role: "employee",
 			centerInfo: centerId,
+			profileImgUrl: profileImgUrl
 		});
 
 		const centers = await Centers.findById(centerId);
@@ -398,7 +397,8 @@ userRouter.put("/edit-employee/:selectedDB/:employeeId", isAuth, isAdmin, async 
 	console.log("en editar empleado");
 	try {
 		const { selectedDB, employeeId } = req.params;
-
+        console.log(User.schema);
+		console.log(req.body);
 		const db = mongoose.connection.useDb(selectedDB);
 		const UserModel = db.model("User", User.schema);
 		const Services = db.model("Service", Service.schema)
@@ -486,11 +486,10 @@ userRouter.get("/get-all-employees/:selectedDB", isAuth, isAdmin, async (req, re
 		const users = await Users.find()
 			.populate("centerInfo", "centerName")
 			.exec();
-		// console.log(employees);
 
 		const userOutput = users.filter((item) => item.role != "admin");
 
-		// console.log(userOutput)
+		console.log(userOutput)
 		res.json(userOutput);
 	} catch (error) {
 		console.log(error);
