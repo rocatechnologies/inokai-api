@@ -408,11 +408,11 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 	}
 });
 
-// Endpoint para establecer un horario manual
+
 appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
     console.log("En horario manual");
 
-    const { date, employee, startTime, endTime } = req.body;
+    const { date, employee, startTime, endTime, type } = req.body; // Añadimos el campo type
     const { selectedDB } = req.params;
 
     const db = mongoose.connection.useDb(selectedDB);
@@ -451,28 +451,42 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
         const formattedStartTime = moment(startTime, "HH:mm:ss").format("HH:mm:ss");
         const formattedEndTime = moment(endTime, "HH:mm:ss").format("HH:mm:ss");
 
-        if (formattedStartTime !== "10:00:00") {
+        if (type) {
+            // Si type viene rellenado, crear una cita con ese tipo como clientName
             appointments.push({
-                clientName: "Fuera de horario",
-                clientPhone: "Fuera de horario",
+                clientName: type,
+                clientPhone: type,
                 date: formattedDate,
-                initTime: "10:00:00",
-                finalTime: formattedStartTime,
+                initTime: formattedStartTime,
+                finalTime: formattedEndTime,
                 userInfo: user._id,
                 centerInfo: centerId
             });
-        }
+        } else {
+            // Si type no viene, comportamiento predeterminado
+            if (formattedStartTime !== "10:00:00") {
+                appointments.push({
+                    clientName: "Fuera de horario",
+                    clientPhone: "Fuera de horario",
+                    date: formattedDate,
+                    initTime: "10:00:00",
+                    finalTime: formattedStartTime,
+                    userInfo: user._id,
+                    centerInfo: centerId
+                });
+            }
 
-        if (formattedEndTime !== "22:00:00") {
-            appointments.push({
-                clientName: "Fuera de horario",
-                clientPhone: "Fuera de horario",
-                date: formattedDate,
-                initTime: formattedEndTime,
-                finalTime: "22:00:00",
-                userInfo: user._id,
-                centerInfo: centerId
-            });
+            if (formattedEndTime !== "22:00:00") {
+                appointments.push({
+                    clientName: "Fuera de horario",
+                    clientPhone: "Fuera de horario",
+                    date: formattedDate,
+                    initTime: formattedEndTime,
+                    finalTime: "22:00:00",
+                    userInfo: user._id,
+                    centerInfo: centerId
+                });
+            }
         }
 
         if (appointments.length > 0) {
@@ -488,6 +502,7 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
         res.status(500).send("Error al establecer el horario manual");
     }
 });
+
 
 appointmentRouter.post("/intercambio-horarios/:selectedDB", async (req, res) => {
     console.log("En intercambio de horarios");
