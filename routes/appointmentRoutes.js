@@ -385,12 +385,13 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 			searchCriteria.clientPhone = { $regex: new RegExp(clientPhone, "i") }; // 'i' para que sea case-insensitive
 		}
 
-		if (req.centerInfo) {
-			searchCriteria.centerInfo = req.centerInfo; // 'i' para que sea case-insensitive
-		} else {
-			// console.log('aqui')
+		if (req.centerInfo && req.centerInfo.trim() !== "") {
+			// Assign centerInfo from the request if it exists and is not an empty string
+			searchCriteria.centerInfo = req.centerInfo;
+		  } else {
+			// Fallback to default centerInfo
 			searchCriteria.centerInfo = centerInfo;
-		}
+		  }
 
 		// Ejecutar la consulta con los criterios de búsqueda
 		const results = await appointmentModels.find(searchCriteria);
