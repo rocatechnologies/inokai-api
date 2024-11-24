@@ -7,7 +7,6 @@ import Speciality from "../models/specialitiesModels.js";
 // import { servicesDb } from "../servicesDb.js";
 import { isAdmin, isAuth, isOwnerAdmin } from "../utils.js";
 import Service from "../models/servicesModels.js";
-
 import moment from "moment-timezone";
 
 const appointmentRouter = express.Router();
@@ -95,6 +94,7 @@ appointmentRouter.get(
 					cenetrInfo: data.centerInfo,
 					services: data.services,
 					remarks: data.remarks,
+					createdBy: data.createdBy
 				};
 
 				appointments2.push(myObjet);
@@ -105,7 +105,9 @@ appointmentRouter.get(
 						email: userData.email,
 						name: userData.name,
 						user_id: userData._id,
+						profileImgUrl: userData.profileImgUrl
 					});
+					console.log(userData.profileImgUrl);
 				}
 			}
 
@@ -258,6 +260,7 @@ appointmentRouter.post(
 				userInfo: userId,
 				centerInfo: req.user.centerInfo,
 				remarks,
+				createdBy: "manual"
 			});
 
 			res.json({ message: "cita creada exitosamente" });
@@ -382,8 +385,8 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 			searchCriteria.clientPhone = { $regex: new RegExp(clientPhone, "i") }; // 'i' para que sea case-insensitive
 		}
 
-		if (req.user.centerInfo) {
-			searchCriteria.centerInfo = req.user.centerInfo; // 'i' para que sea case-insensitive
+		if (req.centerInfo) {
+			searchCriteria.centerInfo = req.centerInfo; // 'i' para que sea case-insensitive
 		} else {
 			// console.log('aqui')
 			searchCriteria.centerInfo = centerInfo;
@@ -398,6 +401,175 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 		res.json({ message: "error en el servidor" });
 	}
 });
+
+// Endpoint para establecer un horario manual
+appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
+    console.log("En horario manual");
+
+    const { date, employee, startTime, endTime } = req.body;
+    const { selectedDB } = req.params;
+
+    const db = mongoose.connection.useDb(selectedDB);
+    const appointmentModel = db.model("Appointment", Appointment.schema);
+    const userModel = db.model("User", User.schema);
+
+    try {
+        // Validar entrada
+        if (!date || !employee || !startTime || !endTime) {
+            return res.status(400).json({ message: "Todos los campos son obligatorios" });
+        }
+
+        // Obtener el usuario
+        const user = await userModel.findById(employee);
+        if (!user) {
+            return res.status(404).json({ message: "Empleado no encontrado" });
+        }
+
+        const centerId = user.centerInfo;
+
+        if (!centerId) {
+            return res.status(404).json({ message: "Centro no asignado al empleado" });
+        }
+
+        const formattedDate = moment.tz(date, "MM/DD/YYYY", "Europe/Madrid").format("MM/DD/YYYY");
+
+        // Borrar citas existentes para ese día y empleado
+        await appointmentModel.deleteMany({
+            date: formattedDate,
+            userInfo: employee,
+            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
+        });
+
+        // Crear nuevas citas basadas en horario
+        const appointments = [];
+        const formattedStartTime = moment(startTime, "HH:mm:ss").format("HH:mm:ss");
+        const formattedEndTime = moment(endTime, "HH:mm:ss").format("HH:mm:ss");
+
+        if (formattedStartTime !== "10:00:00") {
+            appointments.push({
+                clientName: "Fuera de horario",
+                clientPhone: "Fuera de horario",
+                date: formattedDate,
+                initTime: "10:00:00",
+                finalTime: formattedStartTime,
+                userInfo: user._id,
+                centerInfo: centerId
+            });
+        }
+
+        if (formattedEndTime !== "22:00:00") {
+            appointments.push({
+                clientName: "Fuera de horario",
+                clientPhone: "Fuera de horario",
+                date: formattedDate,
+                initTime: formattedEndTime,
+                finalTime: "22:00:00",
+                userInfo: user._id,
+                centerInfo: centerId
+            });
+        }
+
+        if (appointments.length > 0) {
+            await appointmentModel.bulkWrite(appointments.map(app => ({ insertOne: { document: app } })));
+        }
+
+        res.status(200).json({
+            message: "Horario manual establecido correctamente",
+            citasCreadas: appointments.length
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Error al establecer el horario manual");
+    }
+});
+
+appointmentRouter.post("/intercambio-horarios/:selectedDB", async (req, res) => {
+    console.log("En intercambio de horarios");
+
+    const { employee1, employee2, date1, date2 } = req.body;
+    const { selectedDB } = req.params;
+
+    const db = mongoose.connection.useDb(selectedDB);
+    const appointmentModel = db.model("Appointment", Appointment.schema);
+    const userModel = db.model("User", User.schema);
+
+    try {
+        // Validar entrada
+        if (!employee1 || !employee2 || !date1 || !date2) {
+            return res.status(400).json({ message: "Todos los campos son obligatorios" });
+        }
+
+        // Validar usuarios
+        const user1 = await userModel.findById(employee1);
+        const user2 = await userModel.findById(employee2);
+
+        if (!user1 || !user2) {
+            return res.status(404).json({ message: "Uno o ambos empleados no encontrados" });
+        }
+
+        // Formatear fechas
+        const formattedDate1 = moment.tz(date1, "MM/DD/YYYY", "Europe/Madrid").format("MM/DD/YYYY");
+        const formattedDate2 = moment.tz(date2, "MM/DD/YYYY", "Europe/Madrid").format("MM/DD/YYYY");
+
+        // Filtrar citas relevantes para ambos empleados y días
+        const appointmentsEmployee1 = await appointmentModel.find({
+            date: formattedDate1,
+            userInfo: employee1,
+            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
+        });
+
+        const appointmentsEmployee2 = await appointmentModel.find({
+            date: formattedDate2,
+            userInfo: employee2,
+            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
+        });
+
+        // Validar que haya citas para intercambiar
+        if (appointmentsEmployee1.length === 0 || appointmentsEmployee2.length === 0) {
+            return res.status(404).json({ message: "No hay citas disponibles para intercambiar" });
+        }
+
+        // Cambiar los días y empleados de las citas
+        const updatedAppointments1 = appointmentsEmployee1.map(app => ({
+            ...app._doc,
+            date: formattedDate2,
+            userInfo: employee2,
+            centerInfo: user2.centerInfo // Cambiar el centro si es diferente
+        }));
+
+        const updatedAppointments2 = appointmentsEmployee2.map(app => ({
+            ...app._doc,
+            date: formattedDate1,
+            userInfo: employee1,
+            centerInfo: user1.centerInfo // Cambiar el centro si es diferente
+        }));
+
+        // Eliminar las citas antiguas
+        await appointmentModel.deleteMany({
+            $or: [
+                { date: formattedDate1, userInfo: employee1 },
+                { date: formattedDate2, userInfo: employee2 }
+            ]
+        });
+
+        // Insertar las nuevas citas actualizadas
+        await appointmentModel.insertMany([...updatedAppointments1, ...updatedAppointments2]);
+
+        res.status(200).json({
+            message: "Intercambio de horarios realizado correctamente",
+            citasIntercambiadas: {
+                empleado1: updatedAppointments1.length,
+                empleado2: updatedAppointments2.length
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).send("Error al realizar el intercambio de horarios");
+    }
+});
+
+
+
 
 // Endpoint para importar el CSV y crear las citas
 // recibe un query que es una fecha y hay que borrar todas las citas en esa fecha
@@ -436,10 +608,10 @@ try {
             Hora_Salida: row.Hora_Salida?.trim(),
         };
 
-		if (!ID_Trabajador || ID_Trabajador.trim() === "") return;
-		const trabajador = ID_Trabajador.trim();
-		const user = await userModel.findOne({ DNI: { $regex: `^${trabajador}$`, $options: 'i' } });
-		if (!user) return;
+        if (!ID_Trabajador || ID_Trabajador.trim() === "") return;
+        const trabajadorUppercase = ID_Trabajador.toUpperCase();
+        const user = await userModel.findOne({ DNI: trabajadorUppercase });
+        if (!user) return;
 
         const center = user.centerInfo;
         if (!center) return;
@@ -506,7 +678,6 @@ try {
 }
 
 });
-
 
 
 
