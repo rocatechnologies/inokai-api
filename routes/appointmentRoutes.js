@@ -50,7 +50,7 @@ appointmentRouter.get(
 	isAuth,
 	async (req, res) => {
 		console.log("en conseguir todos los appointments");
-		
+
 		// Función auxiliar para formatear la fecha en 'dd/mm/yyyy'
 		function formatDateToDDMMYYYY(dateString) {
 			const date = new Date(dateString); // Convierte la cadena de entrada en un objeto Date
@@ -392,7 +392,8 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 
 		// Si el query 'name' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
 		if (clientName) {
-			searchCriteria.clientName = { $regex: new RegExp(clientName, "i") }; // 'i' para que sea case-insensitive
+			searchCriteria.clientName = { $regex: new RegExp(clientName, "i"), $options: "i" // También aseguramos que sea insensible a mayúsculas/minúsculas
+			}; // 'i' para que sea case-insensitive
 		}
 
 		// Si el query 'phone' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
@@ -409,7 +410,7 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 		  }
 
 		// Ejecutar la consulta con los criterios de búsqueda
-		const results = await appointmentModels.find(searchCriteria);
+		const results = await appointmentModels.find(searchCriteria).collation({ locale: "es", strength: 1 });
 
 		res.json(results); // Devolver los resultados filtrados
 	} catch (error) {
