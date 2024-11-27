@@ -66,7 +66,7 @@ appointmentRouter.get(
 			const query = {
 				centerInfo: filterCenter || centerInfo,
 				date: filterDate,
-				status: "confirmed",
+				status: { $in: ["confirmed", ""] }, // Buscar citas con estado "confirmed" o ""
 			};
 
 			const appointments = await appointmentModel
