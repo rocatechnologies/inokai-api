@@ -276,7 +276,7 @@ appointmentRouter.post(
 				centerInfo: req.user.centerInfo,
 				remarks,
 				createdBy: "Manual",
-				createdAt: data.createdBy,
+				createdAt: Date.now,
 				status: "confirmed"
 			});
 
