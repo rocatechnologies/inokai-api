@@ -155,7 +155,7 @@ appointmentRouter.put(
 );
 
 // cancelar cita
-appointmentRouter.patch(
+appointmentRouter.delete(
 	"/cancel-appointment/:selectedDB/:appointmentId",
 	isAuth,
 	async (req, res) => {
