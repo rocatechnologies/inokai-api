@@ -104,8 +104,7 @@ appointmentRouter.get(
 					cenetrInfo: data.centerInfo,
 					services: data.services,
 					remarks: data.remarks,
-					createdBy: data.createdBy,
-					createdAt: Date.now,
+					createdAt: data.createdBy,
 					status: data.status
 
 				};
@@ -274,7 +273,7 @@ appointmentRouter.post(
 				centerInfo: req.user.centerInfo,
 				remarks,
 				createdBy: "Manual",
-				createdAt: "",
+				createdAt: data.createdBy,
 				status: "confirmed"
 			});
 
