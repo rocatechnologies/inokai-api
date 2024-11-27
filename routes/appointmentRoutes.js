@@ -155,7 +155,7 @@ appointmentRouter.put(
 );
 
 // cancelar cita
-appointmentRouter.delete(
+appointmentRouter.patch(
 	"/cancel-appointment/:selectedDB/:appointmentId",
 	isAuth,
 	async (req, res) => {
@@ -168,7 +168,7 @@ appointmentRouter.delete(
   
 		const updatedAppointment = await appointmentModel.findByIdAndUpdate(
 		  appointmentId,
-		  { status: 'canceled' },  
+		  { status: 'cancelled' },  
 		  { new: true }  
 		);
   
