@@ -376,50 +376,48 @@ appointmentRouter.get("/get-specialities/:selectedDB", async (req, res) => {
 
 //este es en la parte del frontend para se abre un modal y se puede buscar una cita
 appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
-	console.log("endpoint filter");
-	try {
-		const { selectedDB } = req.params;
-		const { clientName, clientPhone, centerInfo } = req.query; // Obtener los parámetros de búsqueda desde el query
+    console.log("endpoint filter");
+    try {
+        const { selectedDB } = req.params;
+        const { clientName, clientPhone, centerInfo } = req.query; // Obtener los parámetros de búsqueda desde el query
 
-		// Seleccionar la base de datos correspondiente
-		const db = mongoose.connection.useDb(selectedDB);
-		// const userModels = db.model("User", User.schema);
+        // Seleccionar la base de datos correspondiente
+        const db = mongoose.connection.useDb(selectedDB);
+        const appointmentModels = db.model("Appointment", Appointment.schema);
 
-		const appointmentModels = db.model("Appointment", Appointment.schema);
+        // Construir el filtro de búsqueda
+        let searchCriteria = {};
 
-		// Construir el filtro de búsqueda
-		let searchCriteria = {};
+        console.log(req.user.centerInfo);
 
-		console.log(req.user.centerInfo);
+        // Si el query 'name' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
+        if (clientName) {
+            searchCriteria.clientName = { $regex: new RegExp(clientName, "i") }; // Ya no es necesario usar $options
+        }
 
-		// Si el query 'name' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
-		if (clientName) {
-			searchCriteria.clientName = { $regex: new RegExp(clientName, "i"), $options: "i" // También aseguramos que sea insensible a mayúsculas/minúsculas
-			}; // 'i' para que sea case-insensitive
-		}
+        // Si el query 'phone' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
+        if (clientPhone) {
+            searchCriteria.clientPhone = { $regex: new RegExp(clientPhone, "i") }; // Ya no es necesario usar $options
+        }
 
-		// Si el query 'phone' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
-		if (clientPhone) {
-			searchCriteria.clientPhone = { $regex: new RegExp(clientPhone, "i") }; // 'i' para que sea case-insensitive
-		}
+        if (req.centerInfo && req.centerInfo.trim() !== "") {
+            // Asignar centerInfo desde la solicitud si existe y no es una cadena vacía
+            searchCriteria.centerInfo = req.centerInfo;
+        } else {
+            // Fallback a centerInfo desde el query
+            searchCriteria.centerInfo = centerInfo;
+        }
 
-		if (req.centerInfo && req.centerInfo.trim() !== "") {
-			// Assign centerInfo from the request if it exists and is not an empty string
-			searchCriteria.centerInfo = req.centerInfo;
-		  } else {
-			// Fallback to default centerInfo
-			searchCriteria.centerInfo = centerInfo;
-		  }
+        // Ejecutar la consulta con los criterios de búsqueda
+        const results = await appointmentModels.find(searchCriteria).collation({ locale: "es", strength: 1 });
 
-		// Ejecutar la consulta con los criterios de búsqueda
-		const results = await appointmentModels.find(searchCriteria).collation({ locale: "es", strength: 1 });
-
-		res.json(results); // Devolver los resultados filtrados
-	} catch (error) {
-		console.log(error);
-		res.json({ message: "error en el servidor" });
-	}
+        res.json(results); // Devolver los resultados filtrados
+    } catch (error) {
+        console.log(error);
+        res.json({ message: "error en el servidor" });
+    }
 });
+
 
 appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
     console.log("=== En horario manual ===");
