@@ -51,16 +51,6 @@ appointmentRouter.get(
 	async (req, res) => {
 		console.log("en conseguir todos los appointments");
 
-		// Función auxiliar para formatear la fecha en 'dd/mm/yyyy'
-		function formatDateToDDMMYYYY(dateString) {
-			const date = new Date(dateString); // Convierte la cadena de entrada en un objeto Date
-			if (isNaN(date)) return dateString; // Si la entrada no es una fecha válida, devuelve la cadena original
-			const day = String(date.getDate()).padStart(2, '0'); // Asegura que el día tenga dos dígitos
-			const month = String(date.getMonth() + 1).padStart(2, '0'); // Asegura que el mes tenga dos dígitos
-			const year = date.getFullYear(); // Obtiene el año completo
-			return `${day}/${month}/${year}`; // Devuelve la fecha en formato 'dd/mm/yyyy'
-		}
-
 		try {
 			const { selectedDB } = req.params;
 			const { centerInfo } = req.user;
@@ -76,6 +66,7 @@ appointmentRouter.get(
 			const query = {
 				centerInfo: filterCenter || centerInfo,
 				date: filterDate,
+				status: "confirmed",
 			};
 
 			const appointments = await appointmentModel
