@@ -51,16 +51,6 @@ appointmentRouter.get(
 	async (req, res) => {
 		console.log("en conseguir todos los appointments");
 
-		// Función auxiliar para formatear la fecha en 'dd/mm/yyyy'
-		function formatDateToDDMMYYYY(dateString) {
-			const date = new Date(dateString); // Convierte la cadena de entrada en un objeto Date
-			if (isNaN(date)) return dateString; // Si la entrada no es una fecha válida, devuelve la cadena original
-			const day = String(date.getDate()).padStart(2, '0'); // Asegura que el día tenga dos dígitos
-			const month = String(date.getMonth() + 1).padStart(2, '0'); // Asegura que el mes tenga dos dígitos
-			const year = date.getFullYear(); // Obtiene el año completo
-			return `${day}/${month}/${year}`; // Devuelve la fecha en formato 'dd/mm/yyyy'
-		}
-
 		try {
 			const { selectedDB } = req.params;
 			const { centerInfo } = req.user;
@@ -105,7 +95,7 @@ appointmentRouter.get(
 					services: data.services,
 					remarks: data.remarks,
 					createdBy: data.createdBy,
-					createdAt: formatDateToDDMMYYYY(data.createdAt),
+					createdAt: data.createdAt,
 					status: data.status
 
 				};
@@ -392,8 +382,7 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 
 		// Si el query 'name' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
 		if (clientName) {
-			searchCriteria.clientName = { $regex: new RegExp(clientName, "i"), $options: "i" // También aseguramos que sea insensible a mayúsculas/minúsculas
-			}; // 'i' para que sea case-insensitive
+			searchCriteria.clientName = { $regex: new RegExp(clientName, "i") }; // 'i' para que sea case-insensitive
 		}
 
 		// Si el query 'phone' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
@@ -410,7 +399,7 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 		  }
 
 		// Ejecutar la consulta con los criterios de búsqueda
-		const results = await appointmentModels.find(searchCriteria).collation({ locale: "es", strength: 1 });
+		const results = await appointmentModels.find(searchCriteria);
 
 		res.json(results); // Devolver los resultados filtrados
 	} catch (error) {
