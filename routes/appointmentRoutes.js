@@ -163,26 +163,38 @@ appointmentRouter.put(
 	}
 );
 
-//eliminar cita
+// cancelar cita
 appointmentRouter.delete(
 	"/cancel-appointment/:selectedDB/:appointmentId",
 	isAuth,
 	async (req, res) => {
-		console.log("endpoint cancelar cita");
-		try {
-			const { selectedDB, appointmentId } = req.params;
-			//selecting the db
-			const db = mongoose.connection.useDb(selectedDB);
-			const appointmentModel = db.model("Appointment", Appointment.schema);
-
-			await appointmentModel.findByIdAndDelete(appointmentId);
-
-			res.json({ message: "cita cancelado status cambiado exitosamente" });
-		} catch (error) {
-			console.log(error);
+	  console.log("endpoint cancelar cita");
+	  try {
+		const { selectedDB, appointmentId } = req.params;
+  
+		const db = mongoose.connection.useDb(selectedDB);
+		const appointmentModel = db.model("Appointment", Appointment.schema);
+  
+		const updatedAppointment = await appointmentModel.findByIdAndUpdate(
+		  appointmentId,
+		  { status: 'canceled' },  
+		  { new: true }  
+		);
+  
+		if (!updatedAppointment) {
+		  return res.status(404).json({ message: "Cita no encontrada" });
 		}
+  
+		res.json({
+		  message: "Cita cancelada y estado actualizado exitosamente",
+		  appointment: updatedAppointment
+		});
+	  } catch (error) {
+		console.log(error);
+		res.status(500).json({ message: "Error en el servidor" });
+	  }
 	}
-);
+  );
 
 /*create cita en el centro
 en este metodo ya obtenemos los datos de la cita que vienen del frontend para poderla crear y el id del usuario/emplealdo al que estara la cita relacionada
