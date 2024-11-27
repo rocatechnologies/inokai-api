@@ -105,7 +105,7 @@ appointmentRouter.get(
 					services: data.services,
 					remarks: data.remarks,
 					createdBy: data.createdBy,
-					createdAt: formatDateToDDMMYYYY(data.createdAt),
+					createdAt: Date.now,
 					status: data.status
 
 				};
