@@ -168,7 +168,7 @@ appointmentRouter.delete(
   
 		const updatedAppointment = await appointmentModel.findByIdAndUpdate(
 		  appointmentId,
-		  { status: 'cancelled' },  
+		  { status: 'canceled' },  
 		  { new: true }  
 		);
   
