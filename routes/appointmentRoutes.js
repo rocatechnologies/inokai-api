@@ -506,7 +506,8 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
                     initTime: "10:00:00",
                     finalTime: formattedStartTime,
                     userInfo: user._id,
-                    centerInfo: centerId
+                    centerInfo: centerId,
+                    status: "confirmed"
                 });
             }
 
@@ -519,7 +520,8 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
                     initTime: formattedEndTime,
                     finalTime: "22:00:00",
                     userInfo: user._id,
-                    centerInfo: centerId
+                    centerInfo: centerId,
+                    status: "confirmed"
                 });
             }
         }
@@ -692,6 +694,7 @@ try {
                 finalTime: "22:00:00",
                 userInfo: user._id,
                 centerInfo: center._id,
+                status: "confirmed"
             });
         } else {
             const formattedHora_Entrada = moment(Hora_Entrada, "HH:mm:ss").format("HH:mm:ss");
@@ -706,6 +709,7 @@ try {
                     finalTime: formattedHora_Entrada,
                     userInfo: user._id,
                     centerInfo: center._id,
+                    status: "confirmed"
                 });
             }
 
@@ -718,6 +722,7 @@ try {
                     finalTime: "22:00:00",
                     userInfo: user._id,
                     centerInfo: center._id,
+                    status: "confirmed"
                 });
             }
         }
