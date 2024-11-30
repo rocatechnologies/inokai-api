@@ -72,9 +72,9 @@ appointmentRouter.get(
 			const appointments = await appointmentModel
 				.find(query)
 				.populate("userInfo");
-            console.log("la query" query);
+            console.log("la query", query);
 
-            console.log("los appointments" appointments);
+            console.log("los appointments", appointments);
 
 
 			const usersInAppointments = [];
