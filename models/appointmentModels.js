@@ -20,8 +20,8 @@ const appointmentSchema = new Schema({
 
     remarks: {type:String},
     createdBy: { type: String},
-    status: {type: String},
-    createdAt: {type: String}
+    status: {type: String, default: "confirmed"},
+    createdAt: { type: Date, default: Date.now }, 
 
 });
 

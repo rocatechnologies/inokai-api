@@ -66,11 +66,16 @@ appointmentRouter.get(
 			const query = {
 				centerInfo: filterCenter || centerInfo,
 				date: filterDate,
+				status: { $in: ["confirmed", ""] }, // Buscar citas con estado "confirmed" o ""
 			};
 
 			const appointments = await appointmentModel
 				.find(query)
 				.populate("userInfo");
+            console.log("la query", query);
+
+            console.log("los appointments", appointments);
+
 
 			const usersInAppointments = [];
 			const emailSet = new Set();
@@ -94,8 +99,7 @@ appointmentRouter.get(
 					cenetrInfo: data.centerInfo,
 					services: data.services,
 					remarks: data.remarks,
-					createdBy: data.createdBy,
-					createdAt: data.createdAt,
+					createdAt: data.createdBy,
 					status: data.status
 
 				};
@@ -154,26 +158,38 @@ appointmentRouter.put(
 	}
 );
 
-//eliminar cita
+// cancelar cita
 appointmentRouter.delete(
 	"/cancel-appointment/:selectedDB/:appointmentId",
 	isAuth,
 	async (req, res) => {
-		console.log("endpoint cancelar cita");
-		try {
-			const { selectedDB, appointmentId } = req.params;
-			//selecting the db
-			const db = mongoose.connection.useDb(selectedDB);
-			const appointmentModel = db.model("Appointment", Appointment.schema);
-
-			await appointmentModel.findByIdAndDelete(appointmentId);
-
-			res.json({ message: "cita cancelado status cambiado exitosamente" });
-		} catch (error) {
-			console.log(error);
+	  console.log("endpoint cancelar cita");
+	  try {
+		const { selectedDB, appointmentId } = req.params;
+  
+		const db = mongoose.connection.useDb(selectedDB);
+		const appointmentModel = db.model("Appointment", Appointment.schema);
+  
+		const updatedAppointment = await appointmentModel.findByIdAndUpdate(
+		  appointmentId,
+		  { status: 'canceled' },  
+		  { new: true }  
+		);
+  
+		if (!updatedAppointment) {
+		  return res.status(404).json({ message: "Cita no encontrada" });
 		}
+  
+		res.json({
+		  message: "Cita cancelada y estado actualizado exitosamente",
+		  appointment: updatedAppointment
+		});
+	  } catch (error) {
+		console.log(error);
+		res.status(500).json({ message: "Error en el servidor" });
+	  }
 	}
-);
+  );
 
 /*create cita en el centro
 en este metodo ya obtenemos los datos de la cita que vienen del frontend para poderla crear y el id del usuario/emplealdo al que estara la cita relacionada
@@ -264,7 +280,7 @@ appointmentRouter.post(
 				centerInfo: req.user.centerInfo,
 				remarks,
 				createdBy: "Manual",
-				createdAt: "",
+				createdAt: new Date(),
 				status: "confirmed"
 			});
 
@@ -364,49 +380,48 @@ appointmentRouter.get("/get-specialities/:selectedDB", async (req, res) => {
 
 //este es en la parte del frontend para se abre un modal y se puede buscar una cita
 appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
-	console.log("endpoint filter");
-	try {
-		const { selectedDB } = req.params;
-		const { clientName, clientPhone, centerInfo } = req.query; // Obtener los parámetros de búsqueda desde el query
+    console.log("endpoint filter");
+    try {
+        const { selectedDB } = req.params;
+        const { clientName, clientPhone, centerInfo } = req.query; // Obtener los parámetros de búsqueda desde el query
 
-		// Seleccionar la base de datos correspondiente
-		const db = mongoose.connection.useDb(selectedDB);
-		// const userModels = db.model("User", User.schema);
+        // Seleccionar la base de datos correspondiente
+        const db = mongoose.connection.useDb(selectedDB);
+        const appointmentModels = db.model("Appointment", Appointment.schema);
 
-		const appointmentModels = db.model("Appointment", Appointment.schema);
+        // Construir el filtro de búsqueda
+        let searchCriteria = {};
 
-		// Construir el filtro de búsqueda
-		let searchCriteria = {};
+        console.log(req.user.centerInfo);
 
-		console.log(req.user.centerInfo);
+        // Si el query 'name' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
+        if (clientName) {
+            searchCriteria.clientName = { $regex: new RegExp(clientName, "i") }; // Ya no es necesario usar $options
+        }
 
-		// Si el query 'name' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
-		if (clientName) {
-			searchCriteria.clientName = { $regex: new RegExp(clientName, "i") }; // 'i' para que sea case-insensitive
-		}
+        // Si el query 'phone' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
+        if (clientPhone) {
+            searchCriteria.clientPhone = { $regex: new RegExp(clientPhone, "i") }; // Ya no es necesario usar $options
+        }
 
-		// Si el query 'phone' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
-		if (clientPhone) {
-			searchCriteria.clientPhone = { $regex: new RegExp(clientPhone, "i") }; // 'i' para que sea case-insensitive
-		}
+        if (req.centerInfo && req.centerInfo.trim() !== "") {
+            // Asignar centerInfo desde la solicitud si existe y no es una cadena vacía
+            searchCriteria.centerInfo = req.centerInfo;
+        } else {
+            // Fallback a centerInfo desde el query
+            searchCriteria.centerInfo = centerInfo;
+        }
 
-		if (req.centerInfo && req.centerInfo.trim() !== "") {
-			// Assign centerInfo from the request if it exists and is not an empty string
-			searchCriteria.centerInfo = req.centerInfo;
-		  } else {
-			// Fallback to default centerInfo
-			searchCriteria.centerInfo = centerInfo;
-		  }
+        // Ejecutar la consulta con los criterios de búsqueda
+        const results = await appointmentModels.find(searchCriteria).collation({ locale: "es", strength: 1 });
 
-		// Ejecutar la consulta con los criterios de búsqueda
-		const results = await appointmentModels.find(searchCriteria);
-
-		res.json(results); // Devolver los resultados filtrados
-	} catch (error) {
-		console.log(error);
-		res.json({ message: "error en el servidor" });
-	}
+        res.json(results); // Devolver los resultados filtrados
+    } catch (error) {
+        console.log(error);
+        res.json({ message: "error en el servidor" });
+    }
 });
+
 
 appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
     console.log("=== En horario manual ===");
@@ -491,7 +506,8 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
                     initTime: "10:00:00",
                     finalTime: formattedStartTime,
                     userInfo: user._id,
-                    centerInfo: centerId
+                    centerInfo: centerId,
+                    status: "confirmed"
                 });
             }
 
@@ -504,7 +520,8 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
                     initTime: formattedEndTime,
                     finalTime: "22:00:00",
                     userInfo: user._id,
-                    centerInfo: centerId
+                    centerInfo: centerId,
+                    status: "confirmed"
                 });
             }
         }
@@ -677,6 +694,7 @@ try {
                 finalTime: "22:00:00",
                 userInfo: user._id,
                 centerInfo: center._id,
+                status: "confirmed"
             });
         } else {
             const formattedHora_Entrada = moment(Hora_Entrada, "HH:mm:ss").format("HH:mm:ss");
@@ -691,6 +709,7 @@ try {
                     finalTime: formattedHora_Entrada,
                     userInfo: user._id,
                     centerInfo: center._id,
+                    status: "confirmed"
                 });
             }
 
@@ -703,6 +722,7 @@ try {
                     finalTime: "22:00:00",
                     userInfo: user._id,
                     centerInfo: center._id,
+                    status: "confirmed"
                 });
             }
         }
