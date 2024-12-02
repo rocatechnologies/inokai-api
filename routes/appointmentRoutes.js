@@ -378,8 +378,6 @@ appointmentRouter.get("/get-specialities/:selectedDB", async (req, res) => {
 		res.json({ message: "error en el servidor" });
 	}
 });
-
-//este es en la parte del frontend para se abre un modal y se puede buscar una cita
 appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
     console.log("endpoint filter");
     try {
@@ -395,14 +393,14 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 
         console.log(req.user.centerInfo);
 
-        // Si el query 'name' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
+        // Si el query 'clientName' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
         if (clientName) {
-            searchCriteria.clientName = { $regex: new RegExp(clientName, "i") }; // Ya no es necesario usar $options
+            searchCriteria.clientName = { $regex: clientName, $options: "i" }; // Insensible a mayúsculas/minúsculas
         }
 
-        // Si el query 'phone' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
+        // Si el query 'clientPhone' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
         if (clientPhone) {
-            searchCriteria.clientPhone = { $regex: new RegExp(clientPhone, "i") }; // Ya no es necesario usar $options
+            searchCriteria.clientPhone = { $regex: clientPhone, $options: "i" }; // Insensible a mayúsculas/minúsculas
         }
 
         if (req.centerInfo && req.centerInfo.trim() !== "") {
@@ -413,7 +411,7 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
             searchCriteria.centerInfo = centerInfo;
         }
 
-        // Ejecutar la consulta con los criterios de búsqueda
+        // Ejecutar la consulta con los criterios de búsqueda y configurar collation para ignorar diacríticos
         const results = await appointmentModels.find(searchCriteria).collation({ locale: "es", strength: 1 });
 
         res.json(results); // Devolver los resultados filtrados
@@ -422,6 +420,7 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
         res.json({ message: "error en el servidor" });
     }
 });
+
 
 
 appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
