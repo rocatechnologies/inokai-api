@@ -392,15 +392,26 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 
         console.log(req.user.centerInfo);
 
-        // Si el query 'clientName' está presente, construir un filtro de búsqueda
-        if (clientName) {
-            // Directamente aplicamos una expresión regular insensible a mayúsculas
-            searchCriteria.clientName = { $regex: clientName, $options: "i" }; // Insensible a mayúsculas/minúsculas
+        // Normalizar texto eliminando acentos y caracteres diacríticos
+        function normalizeText(text) {
+            return text
+                .normalize("NFD") // Descomponer caracteres como á en a + ́
+                .replace(/[\u0300-\u036f]/g, ""); // Eliminar diacríticos
         }
 
-        // Si el query 'clientPhone' está presente, construir un filtro de búsqueda
+        // Si el query 'clientName' está presente
+        if (clientName) {
+            const normalizedClientName = normalizeText(clientName);
+
+            searchCriteria.$or = [
+                { clientName: { $regex: clientName, $options: "i" } }, // Buscar con tildes
+                { clientName: { $regex: normalizedClientName, $options: "i" } }, // Buscar sin tildes
+            ];
+        }
+
+        // Si el query 'clientPhone' está presente
         if (clientPhone) {
-            searchCriteria.clientPhone = { $regex: clientPhone, $options: "i" }; // Insensible a mayúsculas/minúsculas
+            searchCriteria.clientPhone = { $regex: clientPhone, $options: "i" };
         }
 
         // Manejar el filtro de centerInfo
@@ -410,10 +421,8 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
             searchCriteria.centerInfo = centerInfo;
         }
 
-        // Ejecutar la consulta con los criterios de búsqueda y configurar collation para ignorar diacríticos
-        const results = await appointmentModels
-            .find(searchCriteria)
-            .collation({ locale: "es", strength: 1 }); // Ignora tildes y diferencias de mayúsculas/minúsculas
+        // Ejecutar la consulta con los criterios de búsqueda
+        const results = await appointmentModels.find(searchCriteria);
 
         res.json(results); // Devolver los resultados filtrados
     } catch (error) {
