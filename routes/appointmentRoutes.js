@@ -96,10 +96,11 @@ appointmentRouter.get(
 					isCancel: data.isCancel,
 					userInfo: data.userInfo,
 					user_id: data["userInfo"]["_id"],
-					cenetrInfo: data.centerInfo,
+					centerInfo: data.centerInfo,
 					services: data.services,
 					remarks: data.remarks,
-					createdAt: data.createdBy,
+					createdAt: data.createdAt,
+                    createdBy: data.createdBy,
 					status: data.status
 
 				};
@@ -377,13 +378,10 @@ appointmentRouter.get("/get-specialities/:selectedDB", async (req, res) => {
 		res.json({ message: "error en el servidor" });
 	}
 });
-
-//este es en la parte del frontend para se abre un modal y se puede buscar una cita
 appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
-    console.log("endpoint filter");
     try {
         const { selectedDB } = req.params;
-        const { clientName, clientPhone, centerInfo } = req.query; // Obtener los parámetros de búsqueda desde el query
+        const { clientName, clientPhone, centerInfo } = req.query;
 
         // Seleccionar la base de datos correspondiente
         const db = mongoose.connection.useDb(selectedDB);
@@ -394,26 +392,48 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 
         console.log(req.user.centerInfo);
 
-        // Si el query 'name' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
+        // Función para normalizar texto eliminando acentos y caracteres diacríticos
+        function normalizeText(text) {
+            return text
+                .normalize("NFD") // Descomponer caracteres como á en a + ́
+                .replace(/[\u0300-\u036f]/g, "") // Eliminar diacríticos
+                .toLowerCase(); // Convertir a minúsculas para comparación uniforme
+        }
+
+        // Si el query 'clientName' está presente
         if (clientName) {
-            searchCriteria.clientName = { $regex: new RegExp(clientName, "i") }; // Ya no es necesario usar $options
+            const normalizedClientName = normalizeText(clientName);
+
+            searchCriteria.$or = [
+                {
+                    clientName: {
+                        $regex: clientName,
+                        $options: "i", // Insensible a mayúsculas
+                    },
+                },
+                {
+                    clientName: {
+                        $regex: normalizedClientName,
+                        $options: "i", // Insensible a mayúsculas
+                    },
+                },
+            ];
         }
 
-        // Si el query 'phone' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
+        // Si el query 'clientPhone' está presente
         if (clientPhone) {
-            searchCriteria.clientPhone = { $regex: new RegExp(clientPhone, "i") }; // Ya no es necesario usar $options
+            searchCriteria.clientPhone = { $regex: clientPhone, $options: "i" };
         }
 
+        // Manejar el filtro de centerInfo
         if (req.centerInfo && req.centerInfo.trim() !== "") {
-            // Asignar centerInfo desde la solicitud si existe y no es una cadena vacía
             searchCriteria.centerInfo = req.centerInfo;
         } else {
-            // Fallback a centerInfo desde el query
             searchCriteria.centerInfo = centerInfo;
         }
 
         // Ejecutar la consulta con los criterios de búsqueda
-        const results = await appointmentModels.find(searchCriteria).collation({ locale: "es", strength: 1 });
+        const results = await appointmentModels.find(searchCriteria);
 
         res.json(results); // Devolver los resultados filtrados
     } catch (error) {
@@ -421,6 +441,8 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
         res.json({ message: "error en el servidor" });
     }
 });
+
+
 
 
 appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
