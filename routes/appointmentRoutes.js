@@ -378,8 +378,6 @@ appointmentRouter.get("/get-specialities/:selectedDB", async (req, res) => {
 		res.json({ message: "error en el servidor" });
 	}
 });
-
-
 appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 
     try {
@@ -396,16 +394,8 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 
         // Si el query 'clientName' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
         if (clientName) {
-            console.log("endpoint filter", clientName);
-
-            const clientNameSinTildes = clientName.normalize("NFD") // Descompone caracteres como á en a + ́
-            .replace(/[\u0300-\u036f]/g, "") // Elimina los diacríticos (acentos)
-            .replace(/[^\w\s]/gi, ""); // Elimina símbolos, manteniendo letras, números y espacios
-
-            searchCriteria.$or = [
-                { clientName: { $regex: clientName, $options: "i" } }, // Con tildes
-                { clientName: { $regex: clientNameSinTildes, $options: "i" } }, // Sin tildes
-            ];
+            
+            searchCriteria.clientName = { $regex: clientName, $options: "i" }; // Insensible a mayúsculas/minúsculas
         }
 
         // Si el query 'clientPhone' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
@@ -422,7 +412,7 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
         }
 
         // Ejecutar la consulta con los criterios de búsqueda y configurar collation para ignorar diacríticos
-        const results = await appointmentModels.find(searchCriteria);
+        const results = await appointmentModels.find(searchCriteria).collation({ locale: "es", strength: 1 });
 
         res.json(results); // Devolver los resultados filtrados
     } catch (error) {
