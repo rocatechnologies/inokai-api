@@ -392,11 +392,12 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 
         console.log(req.user.centerInfo);
 
-        // Normalizar texto eliminando acentos y caracteres diacríticos
+        // Función para normalizar texto eliminando acentos y caracteres diacríticos
         function normalizeText(text) {
             return text
                 .normalize("NFD") // Descomponer caracteres como á en a + ́
-                .replace(/[\u0300-\u036f]/g, ""); // Eliminar diacríticos
+                .replace(/[\u0300-\u036f]/g, "") // Eliminar diacríticos
+                .toLowerCase(); // Convertir a minúsculas para comparación uniforme
         }
 
         // Si el query 'clientName' está presente
@@ -404,8 +405,18 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
             const normalizedClientName = normalizeText(clientName);
 
             searchCriteria.$or = [
-                { clientName: { $regex: clientName, $options: "i" } }, // Buscar con tildes
-                { clientName: { $regex: normalizedClientName, $options: "i" } }, // Buscar sin tildes
+                {
+                    clientName: {
+                        $regex: clientName,
+                        $options: "i", // Insensible a mayúsculas
+                    },
+                },
+                {
+                    clientName: {
+                        $regex: normalizedClientName,
+                        $options: "i", // Insensible a mayúsculas
+                    },
+                },
             ];
         }
 
@@ -430,6 +441,7 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
         res.json({ message: "error en el servidor" });
     }
 });
+
 
 
 
