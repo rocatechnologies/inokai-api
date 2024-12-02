@@ -96,10 +96,11 @@ appointmentRouter.get(
 					isCancel: data.isCancel,
 					userInfo: data.userInfo,
 					user_id: data["userInfo"]["_id"],
-					cenetrInfo: data.centerInfo,
+					centerInfo: data.centerInfo,
 					services: data.services,
 					remarks: data.remarks,
-					createdAt: data.createdBy,
+					createdAt: data.createdAt,
+                    createdBy: data.createdBy,
 					status: data.status
 
 				};
