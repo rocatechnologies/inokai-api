@@ -379,11 +379,10 @@ appointmentRouter.get("/get-specialities/:selectedDB", async (req, res) => {
 	}
 });
 appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
-    console.log("endpoint filter");
+
     try {
         const { selectedDB } = req.params;
         const { clientName, clientPhone, centerInfo } = req.query; // Obtener los parámetros de búsqueda desde el query
-
         // Seleccionar la base de datos correspondiente
         const db = mongoose.connection.useDb(selectedDB);
         const appointmentModels = db.model("Appointment", Appointment.schema);
@@ -395,7 +394,13 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 
         // Si el query 'clientName' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
         if (clientName) {
-            searchCriteria.clientName = { $regex: clientName, $options: "i" }; // Insensible a mayúsculas/minúsculas
+            console.log("endpoint filter", clientName);
+
+            const clientNameSinTildes = clientName.normalize("NFD") // Descompone caracteres como á en a + ́
+            .replace(/[\u0300-\u036f]/g, "") // Elimina los diacríticos (acentos)
+            .replace(/[^\w\s]/gi, ""); // Elimina símbolos, manteniendo letras, números y espacios
+
+            searchCriteria.clientName = { $regex: clientNameSinTildes, $options: "i" }; // Insensible a mayúsculas/minúsculas
         }
 
         // Si el query 'clientPhone' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
