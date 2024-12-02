@@ -379,10 +379,10 @@ appointmentRouter.get("/get-specialities/:selectedDB", async (req, res) => {
 	}
 });
 appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
-
     try {
         const { selectedDB } = req.params;
-        const { clientName, clientPhone, centerInfo } = req.query; // Obtener los parámetros de búsqueda desde el query
+        const { clientName, clientPhone, centerInfo } = req.query;
+
         // Seleccionar la base de datos correspondiente
         const db = mongoose.connection.useDb(selectedDB);
         const appointmentModels = db.model("Appointment", Appointment.schema);
@@ -392,27 +392,28 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
 
         console.log(req.user.centerInfo);
 
-        // Si el query 'clientName' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
+        // Si el query 'clientName' está presente, construir un filtro de búsqueda
         if (clientName) {
-            
+            // Directamente aplicamos una expresión regular insensible a mayúsculas
             searchCriteria.clientName = { $regex: clientName, $options: "i" }; // Insensible a mayúsculas/minúsculas
         }
 
-        // Si el query 'clientPhone' está presente, agregar al filtro (usando una expresión regular para búsqueda parcial)
+        // Si el query 'clientPhone' está presente, construir un filtro de búsqueda
         if (clientPhone) {
             searchCriteria.clientPhone = { $regex: clientPhone, $options: "i" }; // Insensible a mayúsculas/minúsculas
         }
 
+        // Manejar el filtro de centerInfo
         if (req.centerInfo && req.centerInfo.trim() !== "") {
-            // Asignar centerInfo desde la solicitud si existe y no es una cadena vacía
             searchCriteria.centerInfo = req.centerInfo;
         } else {
-            // Fallback a centerInfo desde el query
             searchCriteria.centerInfo = centerInfo;
         }
 
         // Ejecutar la consulta con los criterios de búsqueda y configurar collation para ignorar diacríticos
-        const results = await appointmentModels.find(searchCriteria).collation({ locale: "es", strength: 1 });
+        const results = await appointmentModels
+            .find(searchCriteria)
+            .collation({ locale: "es", strength: 1 }); // Ignora tildes y diferencias de mayúsculas/minúsculas
 
         res.json(results); // Devolver los resultados filtrados
     } catch (error) {
