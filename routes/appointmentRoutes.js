@@ -402,7 +402,7 @@ appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
             .replace(/[\u0300-\u036f]/g, "") // Elimina los diacríticos (acentos)
             .replace(/[^\w\s]/gi, ""); // Elimina símbolos, manteniendo letras, números y espacios
 
-            earchCriteria.$or = [
+            searchCriteria.$or = [
                 { clientName: { $regex: clientName, $options: "i" } }, // Con tildes
                 { clientName: { $regex: clientNameSinTildes, $options: "i" } }, // Sin tildes
             ];
