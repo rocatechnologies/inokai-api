@@ -492,7 +492,7 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
         await appointmentModel.deleteMany({
             date: formattedDate,
             userInfo: employee,
-            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
+            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo","Compensado", "Reyes", "Festivo", "Fuera de horario"] }
         });
         console.log("Citas eliminadas para el empleado en la fecha especificada.");
 
@@ -602,13 +602,13 @@ appointmentRouter.post("/intercambio-horarios/:selectedDB", async (req, res) => 
         const appointmentsEmployee1 = await appointmentModel.find({
             date: formattedDate1,
             userInfo: employee1,
-            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
+            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo","Compensado", "Reyes", "Festivo", "Fuera de horario"] }
         });
 
         const appointmentsEmployee2 = await appointmentModel.find({
             date: formattedDate2,
             userInfo: employee2,
-            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
+            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo","Compensado", "Reyes", "Festivo", "Fuera de horario"] }
         });
 
         // Validar que haya citas para intercambiar
@@ -681,7 +681,7 @@ try {
 
         await appointmentModel.deleteMany({
             date: { $gte: startOfMonth, $lte: endOfMonth },
-            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] },
+            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Compensado","Festivo", "Fuera de horario"] },
             centerInfo: centerId
         });
     }
@@ -707,7 +707,7 @@ try {
 
         const appointments = [];
 
-        if (["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo"].includes(Hora_Entrada)) {
+        if (["Libre", "Baja", "Vacaciones", "Año Nuevo","Compensado", "Reyes", "Festivo"].includes(Hora_Entrada)) {
             appointments.push({
                 clientName: Hora_Entrada,
                 clientPhone: Hora_Entrada,
