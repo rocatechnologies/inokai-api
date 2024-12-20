@@ -67,6 +67,7 @@ appointmentRouter.get(
 				centerInfo: filterCenter || centerInfo,
 				date: filterDate,
 				status: { $in: ["confirmed", ""] }, // Buscar citas con estado "confirmed" o "",
+				userInfo: { $ne: null } // Filtrar las citas sin usuario asociado
 			};
 
 			const appointments = await appointmentModel
@@ -94,8 +95,8 @@ appointmentRouter.get(
 					initTime: data.initTime,
 					finalTime: data.finalTime,
 					isCancel: data.isCancel,
-    					userInfo: data.userInfo,
-    					user_id: data["userInfo"]["_id"],
+    					userInfo: data.userInfo || null,
+                                        user_id: data["userInfo"] ? data["userInfo"]["_id"] : null, // Verificar si userInfo no es null
 					centerInfo: data.centerInfo,
 					services: data.services,
 					remarks: data.remarks,
