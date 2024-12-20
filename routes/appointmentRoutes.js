@@ -108,16 +108,22 @@ appointmentRouter.get(
 
 				appointments2.push(myObjet);
 
-				if (!emailSet.has(userData.email)) {
-					emailSet.add(userData.email);
-					usersInAppointments.push({
-						email: userData.email,
-						name: userData.name,
-						user_id: userData._id,
-						profileImgUrl: userData.profileImgUrl
-					});
-					console.log(userData.profileImgUrl);
-				}
+				// Validar que userData no sea null antes de usarlo
+                if (userData) {
+                    if (!emailSet.has(userData.email)) {
+                        emailSet.add(userData.email);
+                        usersInAppointments.push({
+                            email: userData.email,
+                            name: userData.name,
+                            user_id: userData._id,
+                            profileImgUrl: userData.profileImgUrl,
+                        });
+                        console.log(`Usuario añadido: ${userData.name}, Email: ${userData.email}`);
+                    }
+                } else {
+                    // Advertencia para depuración si userInfo es null
+                    console.warn(`Cita con ID ${data._id} no tiene información de usuario asociada.`);
+                }
 			}
 
 			res.json({ appointments2, usersInAppointments });
