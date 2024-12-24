@@ -685,10 +685,14 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 
 		console.log("Centro asignado al empleado:", centerId);
 
-		const formattedDate = moment
-			.tz(date, "MM/DD/YYYY", "Europe/Madrid")
-			.format("MM/DD/YYYY");
-		console.log("Fecha formateada:", formattedDate);
+        // Borrar citas existentes para ese día y empleado
+        console.log("Eliminando citas existentes para el día:", formattedDate);
+        await appointmentModel.deleteMany({
+            date: formattedDate,
+            userInfo: employee,
+            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo","Compensado", "Reyes", "Festivo", "Fuera de horario"] }
+        });
+        console.log("Citas eliminadas para el empleado en la fecha especificada.");
 
 		// Borrar citas existentes para ese día y empleado
 		console.log("Eliminando citas existentes para el día:", formattedDate);
@@ -878,6 +882,18 @@ appointmentRouter.post(
 				userInfo: employee2,
 				centerInfo: user2.centerInfo, // Cambiar el centro si es diferente
 			}));
+        // Filtrar citas relevantes para ambos empleados y días
+        const appointmentsEmployee1 = await appointmentModel.find({
+            date: formattedDate1,
+            userInfo: employee1,
+            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo","Compensado", "Reyes", "Festivo", "Fuera de horario"] }
+        });
+
+        const appointmentsEmployee2 = await appointmentModel.find({
+            date: formattedDate2,
+            userInfo: employee2,
+            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo","Compensado", "Reyes", "Festivo", "Fuera de horario"] }
+        });
 
 			const updatedAppointments2 = appointmentsEmployee2.map((app) => ({
 				...app._doc,

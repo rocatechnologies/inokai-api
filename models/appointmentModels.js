@@ -8,6 +8,7 @@ const appointmentSchema = new Schema({
     date: { type: String },
     initTime: { type: String },
     finalTime: { type: String },
+    
     userInfo: {
         type: Schema.Types.ObjectId,
         ref: 'User'
