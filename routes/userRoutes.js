@@ -11,6 +11,8 @@ import generarJWT from "../helpers/generarJWT.js";
 import doesDatabaseExist from "../helpers/doesDatabaseExist.js";
 import { gettingAllCentersHelper } from "../helpers/dbHelpers.js";
 import { isAdmin, isAuth, isOwnerAdmin } from "../utils.js";
+import { upload } from "../helpers/multer.js";
+import { cloudinaryDeleteOneFile, cloudinaryUploadFiles } from "../helpers/cloudinaryConfig.js";
 // import Employee from "../models/employeeModels.js";
 
 const userRouter = express.Router();
@@ -424,6 +426,46 @@ userRouter.put("/edit-employee/:selectedDB/:employeeId", isAuth, isAdmin, async 
 		res.json({ message: "error en el servidor" });
 	}
 });
+
+
+// subir foto de perfil o actualizarla
+userRouter.put('/edit-profile-image/:selectedDB/:employeeId', isAuth, isAdmin, upload, async(req,res) =>{
+	console.log('en endpoint subir o actualizar foto de perfil')
+
+	try {
+		const {selectedDB, employeeId} = req.params
+		console.log(selectedDB,'el db company')
+		console.log(employeeId,'el employee')
+		const files = req.files
+
+		console.log(files,'los archivos enviaxos del front')
+		console.log(req.files,'el req.files')
+		 // inicializando y conectandome a base de datos
+		 const db = mongoose.connection.useDb(selectedDB)
+		 const UserModel = db.model('User',User.schema)
+
+		const isUser = await UserModel.findById(employeeId)
+		let fileToDelete = []
+		if(isUser?.profileImgUrl.length > 0){
+			console.log('ya tiene imagen')
+			fileToDelete = [...fileToDelete, ...isUser?.profileImgUrl]
+
+			for (const item of fileToDelete) {
+                await cloudinaryDeleteOneFile(item.cloudinary_id)
+            }
+		}
+
+		const cloudinaryResut = await cloudinaryUploadFiles(files, 'sergioR')
+		req.body.profileImgUrl = cloudinaryResut
+
+		await UserModel.findByIdAndUpdate(employeeId, req.body)
+		
+		res.json({message:'profile image uploaded'})
+	} catch (error) {
+		console.log(error)
+	}
+})
+
 
 //editar correo de empleado
 userRouter.patch("/edit-employee-email/:selectedDB/:employeeEmail",isAuth, isAdmin, async (req, res) => {
