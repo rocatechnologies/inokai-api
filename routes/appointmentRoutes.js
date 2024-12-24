@@ -1,4 +1,3 @@
-
 import express from "express";
 import mongoose from "mongoose";
 import User from "../models/userModels.js";
@@ -45,89 +44,286 @@ appointmentRouter.get(
 	esta parte es la que hace funcionar el calendario mandando todas las citas y horas de ese dia
 	ademas tiene un filtro para navegar para dias anteriores
 */
-appointmentRouter.get(
-	"/get-all-appointments/:selectedDB",
-	isAuth,
-	async (req, res) => {
-		console.log("en conseguir todos los appointments");
 
-		try {
-			const { selectedDB } = req.params;
-			const { centerInfo } = req.user;
-			const { filterDate, filterCenter } = req.query;
+//viejo enpoint creo hay que borrar actualizado abajo
+// appointmentRouter.get("/get-all-appointments/:selectedDB",isAuth,async (req, res) => {
+// 		console.log("en conseguir todos los appointments");
 
-			//selecting database
-			const db = mongoose.connection.useDb(selectedDB);
-			const appointmentModel = db.model("Appointment", Appointment.schema);
+// 		try {
+// 			const { selectedDB } = req.params;
+// 			const { centerInfo } = req.user;
+// 			const { filterDate, filterCenter } = req.query;
 
-			//lo defino porque necesito el populate del user nada mas
-			db.model("User", User.schema);
+//             console.log(req.user,'chedsfsdfsdfsdfsdfsdfsdfsdfck')
 
-			const query = {
-				centerInfo: filterCenter || centerInfo,
-				date: filterDate,
-				status: { $in: ["confirmed", ""] }, // Buscar citas con estado "confirmed" o ""
-			};
+// 			//selecting database
+// 			const db = mongoose.connection.useDb(selectedDB);
+// 			const appointmentModel = db.model("Appointment", Appointment.schema);
 
-			const appointments = await appointmentModel
-				.find(query)
-				.populate("userInfo");
-            console.log("la query", query);
+// 			//lo defino porque necesito el populate del user nada mas
+// 			db.model("User", User.schema);
 
-            console.log("los appointments", appointments);
+// 			const query = {
+// 				centerInfo: filterCenter || centerInfo,
+// 				date: filterDate,
+// 				status: { $in: ["confirmed", ""] }, // Buscar citas con estado "confirmed" o ""
+// 			};
 
+// 			const appointments = await appointmentModel
+// 				.find(query)
+// 				.populate("userInfo");
+// 			console.log("la query", query);
 
-			const usersInAppointments = [];
-			const emailSet = new Set();
-			const appointments2 = [];
-			//aqui es para formatear los datos
-			for (let i = 0; i < appointments.length; i++) {
-				const userData = appointments[i]["userInfo"];
+// 			console.log("los appointments", appointments);
 
-				const data = appointments[i];
+// 			const usersInAppointments = [];
+// 			const emailSet = new Set();
+// 			const appointments2 = [];
+// 			//aqui es para formatear los datos
+// 			for (let i = 0; i < appointments.length; i++) {
+// 				const userData = appointments[i]["userInfo"];
 
-				const myObjet = {
-					_id: data._id,
-					clientName: data.clientName,
-					clientPhone: data.clientPhone,
-					date: data.date,
-					initTime: data.initTime,
-					finalTime: data.finalTime,
-					isCancel: data.isCancel,
-					userInfo: data.userInfo,
-					user_id: data["userInfo"]["_id"],
-					centerInfo: data.centerInfo,
-					services: data.services,
-					remarks: data.remarks,
-					createdAt: data.createdAt,
-                    createdBy: data.createdBy,
-					status: data.status
+// 				const data = appointments[i];
 
-				};
+// 				const myObjet = {
+// 					_id: data._id,
+// 					clientName: data.clientName,
+// 					clientPhone: data.clientPhone,
+// 					date: data.date,
+// 					initTime: data.initTime,
+// 					finalTime: data.finalTime,
+// 					isCancel: data.isCancel,
+// 					userInfo: data.userInfo,
+// 					user_id: data["userInfo"]["_id"],
+// 					centerInfo: data.centerInfo,
+// 					services: data.services,
+// 					remarks: data.remarks,
+// 					createdAt: data.createdAt,
+// 					createdBy: data.createdBy,
+// 					status: data.status,
+// 				};
 
-				appointments2.push(myObjet);
+// 				appointments2.push(myObjet);
 
-				if (!emailSet.has(userData.email)) {
-					emailSet.add(userData.email);
-					usersInAppointments.push({
-						email: userData.email,
-						name: userData.name,
-						user_id: userData._id,
-						profileImgUrl: userData.profileImgUrl
-					});
-					console.log(userData.profileImgUrl);
-				}
-			}
+// 				if (!emailSet.has(userData.email)) {
+// 					emailSet.add(userData.email);
+// 					usersInAppointments.push({
+// 						email: userData.email,
+// 						name: userData.name,
+// 						user_id: userData._id,
+// 						profileImgUrl: userData.profileImgUrl,
+// 					});
+// 					console.log(userData.profileImgUrl);
+// 				}
+// 			}
 
-			res.json({ appointments2, usersInAppointments });
-		} catch (error) {
-			console.log(error);
-			res.json({ message: "error en el servidor" });
-		}
-	}
-);
+// 			res.json({ appointments2, usersInAppointments });
+// 		} catch (error) {
+// 			console.log(error);
+// 			res.json({ message: "error en el servidor" });
+// 		}
+// 	}
+// );
 
 //editar cita
+
+appointmentRouter.get(
+    "/get-all-appointments/:selectedDB",
+    isAuth,
+    async (req, res) => {
+      console.log("En conseguir todos los appointments");
+  
+      try {
+        const { selectedDB } = req.params;
+        const { centerInfo } = req.user;
+        const { filterDate, filterCenter } = req.query;
+
+        console.log(filterDate,'viendo el filter date')
+        console.log(centerInfo,'viendo el center nfo')
+
+         
+  
+        // Seleccionar base de datos
+        const db = mongoose.connection.useDb(selectedDB);
+        const appointmentModel = db.model("Appointment", Appointment.schema);
+        const userModel = db.model("User", User.schema);
+  
+        // Construcción de la query de citas
+        const appointmentQuery = {
+          centerInfo: filterCenter || centerInfo,
+          date: filterDate,
+          status: { $in: ["confirmed", ""] }, // Buscar citas con estado "confirmed" o ""
+        };
+  
+        // Obtener las citas y los usuarios
+        const [appointments, allUsers] = await Promise.all([
+          appointmentModel.find(appointmentQuery).populate("userInfo"),
+          userModel.find({ centerInfo: centerInfo }), // Obtén todos los usuarios sin filtrar
+        ]);
+  
+        // console.log("Query de citas:", appointmentQuery);
+        // console.log("Citas obtenidas:", appointments);
+  
+        const usersInAppointments = [];
+        const emailSet = new Set();
+        const appointments2 = [];
+  
+        // Formatear datos de citas
+        for (let i = 0; i < appointments.length; i++) {
+          const userData = appointments[i]["userInfo"];
+          const data = appointments[i];
+  
+          const myObjet = {
+            _id: data._id,
+            clientName: data.clientName,
+            clientPhone: data.clientPhone,
+            date: data.date,
+            initTime: data.initTime,
+            finalTime: data.finalTime,
+            isCancel: data.isCancel,
+            userInfo: data.userInfo,
+            user_id: userData?._id, // Manejar el caso en que no haya usuario asociado
+            centerInfo: data.centerInfo,
+            services: data.services,
+            remarks: data.remarks,
+            createdAt: data.createdAt,
+            createdBy: data.createdBy,
+            status: data.status,
+          };
+  
+          appointments2.push(myObjet);
+  
+          if (userData && !emailSet.has(userData.email)) {
+            emailSet.add(userData.email);
+            usersInAppointments.push({
+              email: userData.email,
+              name: userData.name,
+              user_id: userData._id,
+              profileImgUrl: userData.profileImgUrl,
+            });
+            console.log(userData.profileImgUrl);
+          }
+        }
+  
+        // Agregar usuarios sin citas al resultado
+        const usersWithoutAppointments = allUsers
+          .filter((user) => !emailSet.has(user.email))
+          .map((user) => ({
+            email: user.email,
+            name: user.name,
+            user_id: user._id,
+            profileImgUrl: user.profileImgUrl,
+          }));
+  
+        usersInAppointments.push(...usersWithoutAppointments);
+  
+        res.json({ appointments2, usersInAppointments });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error en el servidor" });
+      }
+    }
+);
+  
+
+/////////////////////// get week appointments by user 
+appointmentRouter.get(
+    "/get-user-week-appointments/:selectedDB",
+    isAuth,
+    async (req, res) => {
+      console.log("En conseguir citas del usuario para la semana");
+  
+      try {
+        const { selectedDB } = req.params;
+        const { userId, date } = req.query; // `userId` y `date` enviados desde el frontend
+  
+        if (!userId || !date) {
+          return res
+            .status(400)
+            .json({ message: "Por favor proporciona el userId y la fecha." });
+        }
+  
+        // Seleccionar base de datos
+        const db = mongoose.connection.useDb(selectedDB);
+        const appointmentModel = db.model("Appointment", Appointment.schema);
+        const userModel = db.model("User", User.schema);
+  
+        // Calcular inicio y fin de la semana (lunes a domingo)
+        const givenDate = new Date(date);
+        const startOfWeek = new Date(givenDate);
+        const endOfWeek = new Date(givenDate);
+  
+        startOfWeek.setDate(givenDate.getDate() - givenDate.getDay() + 1); // Lunes
+        startOfWeek.setHours(0, 0, 0, 0); // Comienza a medianoche
+        endOfWeek.setDate(givenDate.getDate() - givenDate.getDay() + 7); // Domingo
+        endOfWeek.setHours(23, 59, 59, 999); // Termina al final del día
+  
+        // Convertir fechas a cadenas
+        const formatToMMDDYYYY = (date) => {
+          const month = (date.getMonth() + 1).toString().padStart(2, "0");
+          const day = date.getDate().toString().padStart(2, "0");
+          const year = date.getFullYear();
+          return `${month}/${day}/${year}`;
+        };
+  
+        const formattedStartOfWeek = formatToMMDDYYYY(startOfWeek);
+        const formattedEndOfWeek = formatToMMDDYYYY(endOfWeek);
+  
+        console.log("Rango de la semana:", formattedStartOfWeek, formattedEndOfWeek);
+  
+        // Construir query
+        const query = {
+            userInfo: userId,
+            date: {
+              $gte: formatToMMDDYYYY(startOfWeek),
+              $lte: formatToMMDDYYYY(endOfWeek),
+            },
+          };
+    
+  
+        // Obtener citas del usuario
+        const userAppointments = await appointmentModel.find(query).populate("userInfo");
+  
+        console.log("Citas del usuario:", userAppointments);
+  
+        // Formatear respuesta
+        const formattedAppointments = userAppointments.map((appointment) => ({
+          _id: appointment._id,
+          clientName: appointment.clientName,
+          clientPhone: appointment.clientPhone,
+          date: appointment.date,
+          initTime: appointment.initTime,
+          finalTime: appointment.finalTime,
+          isCancel: appointment.isCancel,
+          centerInfo: appointment.centerInfo,
+          services: appointment.services,
+          remarks: appointment.remarks,
+          createdAt: appointment.createdAt,
+          createdBy: appointment.createdBy,
+          status: appointment.status,
+          userInfo: appointment.userInfo
+            ? {
+                _id: appointment.userInfo._id,
+                name: appointment.userInfo.name,
+                email: appointment.userInfo.email,
+                profileImgUrl: appointment.userInfo.profileImgUrl,
+              }
+            : null,
+        }));
+  
+        res.json({ appointments2: formattedAppointments, usersInAppointments: [formattedAppointments[0]['userInfo']], });
+
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error en el servidor" });
+      }
+    }
+  );
+  
+
+
+
+
 appointmentRouter.put(
 	"/edit-appointment/:selectedDB/:appointmentId",
 	isAuth,
@@ -164,33 +360,33 @@ appointmentRouter.delete(
 	"/cancel-appointment/:selectedDB/:appointmentId",
 	isAuth,
 	async (req, res) => {
-	  console.log("endpoint cancelar cita");
-	  try {
-		const { selectedDB, appointmentId } = req.params;
-  
-		const db = mongoose.connection.useDb(selectedDB);
-		const appointmentModel = db.model("Appointment", Appointment.schema);
-  
-		const updatedAppointment = await appointmentModel.findByIdAndUpdate(
-		  appointmentId,
-		  { status: 'canceled' },  
-		  { new: true }  
-		);
-  
-		if (!updatedAppointment) {
-		  return res.status(404).json({ message: "Cita no encontrada" });
+		console.log("endpoint cancelar cita");
+		try {
+			const { selectedDB, appointmentId } = req.params;
+
+			const db = mongoose.connection.useDb(selectedDB);
+			const appointmentModel = db.model("Appointment", Appointment.schema);
+
+			const updatedAppointment = await appointmentModel.findByIdAndUpdate(
+				appointmentId,
+				{ status: "canceled" },
+				{ new: true }
+			);
+
+			if (!updatedAppointment) {
+				return res.status(404).json({ message: "Cita no encontrada" });
+			}
+
+			res.json({
+				message: "Cita cancelada y estado actualizado exitosamente",
+				appointment: updatedAppointment,
+			});
+		} catch (error) {
+			console.log(error);
+			res.status(500).json({ message: "Error en el servidor" });
 		}
-  
-		res.json({
-		  message: "Cita cancelada y estado actualizado exitosamente",
-		  appointment: updatedAppointment
-		});
-	  } catch (error) {
-		console.log(error);
-		res.status(500).json({ message: "Error en el servidor" });
-	  }
 	}
-  );
+);
 
 /*create cita en el centro
 en este metodo ya obtenemos los datos de la cita que vienen del frontend para poderla crear y el id del usuario/emplealdo al que estara la cita relacionada
@@ -251,12 +447,10 @@ appointmentRouter.post(
 			});
 
 			if (isTimeConflict) {
-				return res
-					.status(400)
-					.json({
-						message:
-							"El horario seleccionado está ocupado. Por favor, elige otro horario.",
-					});
+				return res.status(400).json({
+					message:
+						"El horario seleccionado está ocupado. Por favor, elige otro horario.",
+				});
 				// return false;
 			}
 
@@ -282,7 +476,7 @@ appointmentRouter.post(
 				remarks,
 				createdBy: "Manual",
 				createdAt: new Date(),
-				status: "confirmed"
+				status: "confirmed",
 			});
 
 			res.json({ message: "cita creada exitosamente" });
@@ -378,399 +572,486 @@ appointmentRouter.get("/get-specialities/:selectedDB", async (req, res) => {
 		res.json({ message: "error en el servidor" });
 	}
 });
+
 appointmentRouter.get("/filter/:selectedDB", isAuth, async (req, res) => {
-    try {
-        const { selectedDB } = req.params;
-        const { clientName, clientPhone, centerInfo } = req.query;
+	try {
+		const { selectedDB } = req.params;
+		const { clientName, clientPhone, centerInfo } = req.query;
 
-        // Seleccionar la base de datos correspondiente
-        const db = mongoose.connection.useDb(selectedDB);
-        const appointmentModels = db.model("Appointment", Appointment.schema);
+		// Seleccionar la base de datos correspondiente
+		const db = mongoose.connection.useDb(selectedDB);
+		const appointmentModels = db.model("Appointment", Appointment.schema);
 
-        // Construir el filtro de búsqueda
-        let searchCriteria = {};
+		// Construir el filtro de búsqueda
+		let searchCriteria = {};
 
-        console.log(req.user.centerInfo);
+		console.log(req.user.centerInfo);
 
-        // Función para normalizar texto eliminando acentos y caracteres diacríticos
-        function normalizeText(text) {
-            return text
-                .normalize("NFD") // Descomponer caracteres como á en a + ́
-                .replace(/[\u0300-\u036f]/g, "") // Eliminar diacríticos
-                .toLowerCase(); // Convertir a minúsculas para comparación uniforme
-        }
+		// Función para normalizar texto eliminando acentos y caracteres diacríticos
+		function normalizeText(text) {
+			return text
+				.normalize("NFD") // Descomponer caracteres como á en a + ́
+				.replace(/[\u0300-\u036f]/g, "") // Eliminar diacríticos
+				.toLowerCase(); // Convertir a minúsculas para comparación uniforme
+		}
 
-        // Si el query 'clientName' está presente
-        if (clientName) {
-            const normalizedClientName = normalizeText(clientName);
+		// Si el query 'clientName' está presente
+		if (clientName) {
+			const normalizedClientName = normalizeText(clientName);
 
-            searchCriteria.$or = [
-                {
-                    clientName: {
-                        $regex: clientName,
-                        $options: "i", // Insensible a mayúsculas
-                    },
-                },
-                {
-                    clientName: {
-                        $regex: normalizedClientName,
-                        $options: "i", // Insensible a mayúsculas
-                    },
-                },
-            ];
-        }
+			searchCriteria.$or = [
+				{
+					clientName: {
+						$regex: clientName,
+						$options: "i", // Insensible a mayúsculas
+					},
+				},
+				{
+					clientName: {
+						$regex: normalizedClientName,
+						$options: "i", // Insensible a mayúsculas
+					},
+				},
+			];
+		}
 
-        // Si el query 'clientPhone' está presente
-        if (clientPhone) {
-            searchCriteria.clientPhone = { $regex: clientPhone, $options: "i" };
-        }
+		// Si el query 'clientPhone' está presente
+		if (clientPhone) {
+			searchCriteria.clientPhone = { $regex: clientPhone, $options: "i" };
+		}
 
-        // Manejar el filtro de centerInfo
-        if (req.centerInfo && req.centerInfo.trim() !== "") {
-            searchCriteria.centerInfo = req.centerInfo;
-        } else {
-            searchCriteria.centerInfo = centerInfo;
-        }
+		// Manejar el filtro de centerInfo
+		if (req.centerInfo && req.centerInfo.trim() !== "") {
+			searchCriteria.centerInfo = req.centerInfo;
+		} else {
+			searchCriteria.centerInfo = centerInfo;
+		}
 
-        // Ejecutar la consulta con los criterios de búsqueda
-        const results = await appointmentModels.find(searchCriteria);
+		// Ejecutar la consulta con los criterios de búsqueda
+		const results = await appointmentModels.find(searchCriteria);
 
-        res.json(results); // Devolver los resultados filtrados
-    } catch (error) {
-        console.log(error);
-        res.json({ message: "error en el servidor" });
-    }
+		res.json(results); // Devolver los resultados filtrados
+	} catch (error) {
+		console.log(error);
+		res.json({ message: "error en el servidor" });
+	}
 });
-
-
-
 
 appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
-    console.log("=== En horario manual ===");
-    
-    const { date, employee, startTime, endTime, type } = req.body; // Añadimos el campo type
-    const { selectedDB } = req.params;
+	console.log("=== En horario manual ===");
 
-    console.log("Entrada recibida:");
-    console.log("Database seleccionada:", selectedDB);
-    console.log("Datos del body:", { date, employee, startTime, endTime, type });
+	const { date, employee, startTime, endTime, type } = req.body; // Añadimos el campo type
+	const { selectedDB } = req.params;
 
-    const db = mongoose.connection.useDb(selectedDB);
-    const appointmentModel = db.model("Appointment", Appointment.schema);
-    const userModel = db.model("User", User.schema);
+	console.log("Entrada recibida:");
+	console.log("Database seleccionada:", selectedDB);
+	console.log("Datos del body:", { date, employee, startTime, endTime, type });
 
-    try {
-        // Validar entrada
-        if (!date || !employee || !startTime || !endTime) {
-            console.log("Faltan datos obligatorios:", { date, employee, startTime, endTime });
-            return res.status(400).json({ message: "Todos los campos son obligatorios" });
-        }
+	const db = mongoose.connection.useDb(selectedDB);
+	const appointmentModel = db.model("Appointment", Appointment.schema);
+	const userModel = db.model("User", User.schema);
 
-        // Obtener el usuario
-        console.log("Buscando usuario con ID:", employee);
-        const user = await userModel.findById(employee);
-        if (!user) {
-            console.log("Usuario no encontrado.");
-            return res.status(404).json({ message: "Empleado no encontrado" });
-        }
+	try {
+		// Validar entrada
+		if (!date || !employee || !startTime || !endTime) {
+			console.log("Faltan datos obligatorios:", {
+				date,
+				employee,
+				startTime,
+				endTime,
+			});
+			return res
+				.status(400)
+				.json({ message: "Todos los campos son obligatorios" });
+		}
 
-        console.log("Usuario encontrado:", user);
+		// Obtener el usuario
+		console.log("Buscando usuario con ID:", employee);
+		const user = await userModel.findById(employee);
+		if (!user) {
+			console.log("Usuario no encontrado.");
+			return res.status(404).json({ message: "Empleado no encontrado" });
+		}
 
-        const centerId = user.centerInfo;
-        if (!centerId) {
-            console.log("Centro no asignado al empleado.");
-            return res.status(404).json({ message: "Centro no asignado al empleado" });
-        }
+		console.log("Usuario encontrado:", user);
 
-        console.log("Centro asignado al empleado:", centerId);
+		const centerId = user.centerInfo;
+		if (!centerId) {
+			console.log("Centro no asignado al empleado.");
+			return res
+				.status(404)
+				.json({ message: "Centro no asignado al empleado" });
+		}
 
-        const formattedDate = moment.tz(date, "MM/DD/YYYY", "Europe/Madrid").format("MM/DD/YYYY");
-        console.log("Fecha formateada:", formattedDate);
+		console.log("Centro asignado al empleado:", centerId);
 
-        // Borrar citas existentes para ese día y empleado
-        console.log("Eliminando citas existentes para el día:", formattedDate);
-        await appointmentModel.deleteMany({
-            date: formattedDate,
-            userInfo: employee,
-            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
-        });
-        console.log("Citas eliminadas para el empleado en la fecha especificada.");
+		const formattedDate = moment
+			.tz(date, "MM/DD/YYYY", "Europe/Madrid")
+			.format("MM/DD/YYYY");
+		console.log("Fecha formateada:", formattedDate);
 
-        // Crear nuevas citas basadas en horario
-        const appointments = [];
-        const formattedStartTime = moment(startTime, "HH:mm:ss").format("HH:mm:ss");
-        const formattedEndTime = moment(endTime, "HH:mm:ss").format("HH:mm:ss");
+		// Borrar citas existentes para ese día y empleado
+		console.log("Eliminando citas existentes para el día:", formattedDate);
+		await appointmentModel.deleteMany({
+			date: formattedDate,
+			userInfo: employee,
+			clientName: {
+				$in: [
+					"Libre",
+					"Baja",
+					"Vacaciones",
+					"Año Nuevo",
+					"Reyes",
+					"Festivo",
+					"Fuera de horario",
+				],
+			},
+		});
+		console.log("Citas eliminadas para el empleado en la fecha especificada.");
 
-        console.log("Hora de inicio formateada:", formattedStartTime);
-        console.log("Hora de fin formateada:", formattedEndTime);
+		// Crear nuevas citas basadas en horario
+		const appointments = [];
+		const formattedStartTime = moment(startTime, "HH:mm:ss").format("HH:mm:ss");
+		const formattedEndTime = moment(endTime, "HH:mm:ss").format("HH:mm:ss");
 
-        if (type) {
-            // Si type viene rellenado, crear una cita con ese tipo como clientName
-            console.log("Creando cita con tipo:", type);
-            appointments.push({
-                clientName: type,
-                clientPhone: type,
-                date: formattedDate,
-                initTime: formattedStartTime,
-                finalTime: formattedEndTime,
-                userInfo: user._id,
-                centerInfo: centerId
-            });
-        } else {
-            // Si type no viene, comportamiento predeterminado
-            console.log("Creando citas predeterminadas (Fuera de horario).");
-            if (formattedStartTime !== "10:00:00") {
-                console.log("Añadiendo cita 'Fuera de horario' antes de la hora de entrada.");
-                appointments.push({
-                    clientName: "Fuera de horario",
-                    clientPhone: "Fuera de horario",
-                    date: formattedDate,
-                    initTime: "10:00:00",
-                    finalTime: formattedStartTime,
-                    userInfo: user._id,
-                    centerInfo: centerId,
-                    status: "confirmed"
-                });
-            }
+		console.log("Hora de inicio formateada:", formattedStartTime);
+		console.log("Hora de fin formateada:", formattedEndTime);
 
-            if (formattedEndTime !== "22:00:00") {
-                console.log("Añadiendo cita 'Fuera de horario' después de la hora de salida.");
-                appointments.push({
-                    clientName: "Fuera de horario",
-                    clientPhone: "Fuera de horario",
-                    date: formattedDate,
-                    initTime: formattedEndTime,
-                    finalTime: "22:00:00",
-                    userInfo: user._id,
-                    centerInfo: centerId,
-                    status: "confirmed"
-                });
-            }
-        }
+		if (type) {
+			// Si type viene rellenado, crear una cita con ese tipo como clientName
+			console.log("Creando cita con tipo:", type);
+			appointments.push({
+				clientName: type,
+				clientPhone: type,
+				date: formattedDate,
+				initTime: formattedStartTime,
+				finalTime: formattedEndTime,
+				userInfo: user._id,
+				centerInfo: centerId,
+			});
+		} else {
+			// Si type no viene, comportamiento predeterminado
+			console.log("Creando citas predeterminadas (Fuera de horario).");
+			if (formattedStartTime !== "10:00:00") {
+				console.log(
+					"Añadiendo cita 'Fuera de horario' antes de la hora de entrada."
+				);
+				appointments.push({
+					clientName: "Fuera de horario",
+					clientPhone: "Fuera de horario",
+					date: formattedDate,
+					initTime: "10:00:00",
+					finalTime: formattedStartTime,
+					userInfo: user._id,
+					centerInfo: centerId,
+					status: "confirmed",
+				});
+			}
 
-        console.log("Citas preparadas para insertar:", appointments);
+			if (formattedEndTime !== "22:00:00") {
+				console.log(
+					"Añadiendo cita 'Fuera de horario' después de la hora de salida."
+				);
+				appointments.push({
+					clientName: "Fuera de horario",
+					clientPhone: "Fuera de horario",
+					date: formattedDate,
+					initTime: formattedEndTime,
+					finalTime: "22:00:00",
+					userInfo: user._id,
+					centerInfo: centerId,
+					status: "confirmed",
+				});
+			}
+		}
 
-        if (appointments.length > 0) {
-            console.log("Insertando citas en la base de datos.");
-            await appointmentModel.bulkWrite(appointments.map(app => ({ insertOne: { document: app } })));
-        } else {
-            console.log("No hay citas para insertar.");
-        }
+		console.log("Citas preparadas para insertar:", appointments);
 
-        console.log("Proceso completado. Total citas creadas:", appointments.length);
-        res.status(200).json({
-            message: "Horario manual establecido correctamente",
-            citasCreadas: appointments.length
-        });
-    } catch (error) {
-        console.error("Error durante el proceso:", error);
-        res.status(500).send("Error al establecer el horario manual");
-    }
+		if (appointments.length > 0) {
+			console.log("Insertando citas en la base de datos.");
+			await appointmentModel.bulkWrite(
+				appointments.map((app) => ({ insertOne: { document: app } }))
+			);
+		} else {
+			console.log("No hay citas para insertar.");
+		}
+
+		console.log(
+			"Proceso completado. Total citas creadas:",
+			appointments.length
+		);
+		res.status(200).json({
+			message: "Horario manual establecido correctamente",
+			citasCreadas: appointments.length,
+		});
+	} catch (error) {
+		console.error("Error durante el proceso:", error);
+		res.status(500).send("Error al establecer el horario manual");
+	}
 });
 
+appointmentRouter.post(
+	"/intercambio-horarios/:selectedDB",
+	async (req, res) => {
+		console.log("En intercambio de horarios");
 
+		const { employee1, employee2, date1, date2 } = req.body;
+		const { selectedDB } = req.params;
 
-appointmentRouter.post("/intercambio-horarios/:selectedDB", async (req, res) => {
-    console.log("En intercambio de horarios");
+		const db = mongoose.connection.useDb(selectedDB);
+		const appointmentModel = db.model("Appointment", Appointment.schema);
+		const userModel = db.model("User", User.schema);
 
-    const { employee1, employee2, date1, date2 } = req.body;
-    const { selectedDB } = req.params;
+		try {
+			// Validar entrada
+			if (!employee1 || !employee2 || !date1 || !date2) {
+				return res
+					.status(400)
+					.json({ message: "Todos los campos son obligatorios" });
+			}
 
-    const db = mongoose.connection.useDb(selectedDB);
-    const appointmentModel = db.model("Appointment", Appointment.schema);
-    const userModel = db.model("User", User.schema);
+			// Validar usuarios
+			const user1 = await userModel.findById(employee1);
+			const user2 = await userModel.findById(employee2);
 
-    try {
-        // Validar entrada
-        if (!employee1 || !employee2 || !date1 || !date2) {
-            return res.status(400).json({ message: "Todos los campos son obligatorios" });
-        }
+			if (!user1 || !user2) {
+				return res
+					.status(404)
+					.json({ message: "Uno o ambos empleados no encontrados" });
+			}
 
-        // Validar usuarios
-        const user1 = await userModel.findById(employee1);
-        const user2 = await userModel.findById(employee2);
+			// Formatear fechas
+			const formattedDate1 = moment
+				.tz(date1, "MM/DD/YYYY", "Europe/Madrid")
+				.format("MM/DD/YYYY");
+			const formattedDate2 = moment
+				.tz(date2, "MM/DD/YYYY", "Europe/Madrid")
+				.format("MM/DD/YYYY");
 
-        if (!user1 || !user2) {
-            return res.status(404).json({ message: "Uno o ambos empleados no encontrados" });
-        }
+			// Filtrar citas relevantes para ambos empleados y días
+			const appointmentsEmployee1 = await appointmentModel.find({
+				date: formattedDate1,
+				userInfo: employee1,
+				clientName: {
+					$in: [
+						"Libre",
+						"Baja",
+						"Vacaciones",
+						"Año Nuevo",
+						"Reyes",
+						"Festivo",
+						"Fuera de horario",
+					],
+				},
+			});
 
-        // Formatear fechas
-        const formattedDate1 = moment.tz(date1, "MM/DD/YYYY", "Europe/Madrid").format("MM/DD/YYYY");
-        const formattedDate2 = moment.tz(date2, "MM/DD/YYYY", "Europe/Madrid").format("MM/DD/YYYY");
+			const appointmentsEmployee2 = await appointmentModel.find({
+				date: formattedDate2,
+				userInfo: employee2,
+				clientName: {
+					$in: [
+						"Libre",
+						"Baja",
+						"Vacaciones",
+						"Año Nuevo",
+						"Reyes",
+						"Festivo",
+						"Fuera de horario",
+					],
+				},
+			});
 
-        // Filtrar citas relevantes para ambos empleados y días
-        const appointmentsEmployee1 = await appointmentModel.find({
-            date: formattedDate1,
-            userInfo: employee1,
-            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
-        });
+			// Validar que haya citas para intercambiar
+			if (
+				appointmentsEmployee1.length === 0 ||
+				appointmentsEmployee2.length === 0
+			) {
+				return res
+					.status(404)
+					.json({ message: "No hay citas disponibles para intercambiar" });
+			}
 
-        const appointmentsEmployee2 = await appointmentModel.find({
-            date: formattedDate2,
-            userInfo: employee2,
-            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] }
-        });
+			// Cambiar los días y empleados de las citas
+			const updatedAppointments1 = appointmentsEmployee1.map((app) => ({
+				...app._doc,
+				date: formattedDate2,
+				userInfo: employee2,
+				centerInfo: user2.centerInfo, // Cambiar el centro si es diferente
+			}));
 
-        // Validar que haya citas para intercambiar
-        if (appointmentsEmployee1.length === 0 || appointmentsEmployee2.length === 0) {
-            return res.status(404).json({ message: "No hay citas disponibles para intercambiar" });
-        }
+			const updatedAppointments2 = appointmentsEmployee2.map((app) => ({
+				...app._doc,
+				date: formattedDate1,
+				userInfo: employee1,
+				centerInfo: user1.centerInfo, // Cambiar el centro si es diferente
+			}));
 
-        // Cambiar los días y empleados de las citas
-        const updatedAppointments1 = appointmentsEmployee1.map(app => ({
-            ...app._doc,
-            date: formattedDate2,
-            userInfo: employee2,
-            centerInfo: user2.centerInfo // Cambiar el centro si es diferente
-        }));
+			// Eliminar las citas antiguas
+			await appointmentModel.deleteMany({
+				$or: [
+					{ date: formattedDate1, userInfo: employee1 },
+					{ date: formattedDate2, userInfo: employee2 },
+				],
+			});
 
-        const updatedAppointments2 = appointmentsEmployee2.map(app => ({
-            ...app._doc,
-            date: formattedDate1,
-            userInfo: employee1,
-            centerInfo: user1.centerInfo // Cambiar el centro si es diferente
-        }));
+			// Insertar las nuevas citas actualizadas
+			await appointmentModel.insertMany([
+				...updatedAppointments1,
+				...updatedAppointments2,
+			]);
 
-        // Eliminar las citas antiguas
-        await appointmentModel.deleteMany({
-            $or: [
-                { date: formattedDate1, userInfo: employee1 },
-                { date: formattedDate2, userInfo: employee2 }
-            ]
-        });
-
-        // Insertar las nuevas citas actualizadas
-        await appointmentModel.insertMany([...updatedAppointments1, ...updatedAppointments2]);
-
-        res.status(200).json({
-            message: "Intercambio de horarios realizado correctamente",
-            citasIntercambiadas: {
-                empleado1: updatedAppointments1.length,
-                empleado2: updatedAppointments2.length
-            }
-        });
-    } catch (error) {
-        console.error(error);
-        res.status(500).send("Error al realizar el intercambio de horarios");
-    }
-});
-
-
-
+			res.status(200).json({
+				message: "Intercambio de horarios realizado correctamente",
+				citasIntercambiadas: {
+					empleado1: updatedAppointments1.length,
+					empleado2: updatedAppointments2.length,
+				},
+			});
+		} catch (error) {
+			console.error(error);
+			res.status(500).send("Error al realizar el intercambio de horarios");
+		}
+	}
+);
 
 // Endpoint para importar el CSV y crear las citas
 // recibe un query que es una fecha y hay que borrar todas las citas en esa fecha
 appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
-	console.log('en generar horarios')
+	console.log("en generar horarios");
 
-	
-const results = req.body; 
-const { dateToDelete, centerId } = req.query;
-let filasProcesadas = 0;
-const citasPorEmpleado = {};
-const { selectedDB } = req.params;
-const db = mongoose.connection.useDb(selectedDB);
-const appointmentModel = db.model("Appointment", Appointment.schema);
-const userModel = db.model("User", User.schema);
+	const results = req.body;
+	const { dateToDelete, centerId } = req.query;
+	let filasProcesadas = 0;
+	const citasPorEmpleado = {};
+	const { selectedDB } = req.params;
+	const db = mongoose.connection.useDb(selectedDB);
+	const appointmentModel = db.model("Appointment", Appointment.schema);
+	const userModel = db.model("User", User.schema);
 
-try {
-    if (dateToDelete && centerId) {
-        const momentDate = moment.tz(dateToDelete, "MM/DD/YYYY", "Europe/Madrid");
-        const startOfMonth = momentDate.clone().startOf('month').format("MM/DD/YYYY");
-        const endOfMonth = momentDate.clone().endOf('month').format("MM/DD/YYYY");
+	try {
+		if (dateToDelete && centerId) {
+			const momentDate = moment.tz(dateToDelete, "MM/DD/YYYY", "Europe/Madrid");
+			const startOfMonth = momentDate
+				.clone()
+				.startOf("month")
+				.format("MM/DD/YYYY");
+			const endOfMonth = momentDate.clone().endOf("month").format("MM/DD/YYYY");
 
-        await appointmentModel.deleteMany({
-            date: { $gte: startOfMonth, $lte: endOfMonth },
-            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo", "Fuera de horario"] },
-            centerInfo: centerId
-        });
-    }
+			await appointmentModel.deleteMany({
+				date: { $gte: startOfMonth, $lte: endOfMonth },
+				clientName: {
+					$in: [
+						"Libre",
+						"Baja",
+						"Vacaciones",
+						"Año Nuevo",
+						"Reyes",
+						"Festivo",
+						"Fuera de horario",
+					],
+				},
+				centerInfo: centerId,
+			});
+		}
 
-    const promises = results.map(async row => {
-        filasProcesadas++;
-        const { ID_Trabajador, Fecha, Hora_Entrada, Hora_Salida } = {
-            ID_Trabajador: row.ID_Trabajador?.trim(),
-            Fecha: row.Fecha?.trim(),
-            Hora_Entrada: row.Hora_Entrada?.trim(),
-            Hora_Salida: row.Hora_Salida?.trim(),
-        };
+		const promises = results.map(async (row) => {
+			filasProcesadas++;
+			const { ID_Trabajador, Fecha, Hora_Entrada, Hora_Salida } = {
+				ID_Trabajador: row.ID_Trabajador?.trim(),
+				Fecha: row.Fecha?.trim(),
+				Hora_Entrada: row.Hora_Entrada?.trim(),
+				Hora_Salida: row.Hora_Salida?.trim(),
+			};
 
-        if (!ID_Trabajador || ID_Trabajador.trim() === "") return;
-        const trabajadorUppercase = ID_Trabajador.toUpperCase();
-        const user = await userModel.findOne({ DNI: trabajadorUppercase });
-        if (!user) return;
+			if (!ID_Trabajador || ID_Trabajador.trim() === "") return;
+			const trabajadorUppercase = ID_Trabajador.toUpperCase();
+			const user = await userModel.findOne({ DNI: trabajadorUppercase });
+			if (!user) return;
 
-        const center = user.centerInfo;
-        if (!center) return;
+			const center = user.centerInfo;
+			if (!center) return;
 
-        const date = moment.tz(Fecha, "MM/DD/YYYY", "Europe/Madrid").format("MM/DD/YYYY");
+			const date = moment
+				.tz(Fecha, "MM/DD/YYYY", "Europe/Madrid")
+				.format("MM/DD/YYYY");
 
-        const appointments = [];
+			const appointments = [];
 
-        if (["Libre", "Baja", "Vacaciones", "Año Nuevo", "Reyes", "Festivo"].includes(Hora_Entrada)) {
-            appointments.push({
-                clientName: Hora_Entrada,
-                clientPhone: Hora_Entrada,
-                date: date,
-                initTime: "10:00:00",
-                finalTime: "22:00:00",
-                userInfo: user._id,
-                centerInfo: center._id,
-                status: "confirmed"
-            });
-        } else {
-            const formattedHora_Entrada = moment(Hora_Entrada, "HH:mm:ss").format("HH:mm:ss");
-            const formattedHora_Salida = moment(Hora_Salida, "HH:mm:ss").format("HH:mm:ss");
+			if (
+				[
+					"Libre",
+					"Baja",
+					"Vacaciones",
+					"Año Nuevo",
+					"Reyes",
+					"Festivo",
+				].includes(Hora_Entrada)
+			) {
+				appointments.push({
+					clientName: Hora_Entrada,
+					clientPhone: Hora_Entrada,
+					date: date,
+					initTime: "10:00:00",
+					finalTime: "22:00:00",
+					userInfo: user._id,
+					centerInfo: center._id,
+					status: "confirmed",
+				});
+			} else {
+				const formattedHora_Entrada = moment(Hora_Entrada, "HH:mm:ss").format(
+					"HH:mm:ss"
+				);
+				const formattedHora_Salida = moment(Hora_Salida, "HH:mm:ss").format(
+					"HH:mm:ss"
+				);
 
-            if (formattedHora_Entrada !== "10:00:00") {
-                appointments.push({
-                    clientName: "Fuera de horario",
-                    clientPhone: "Fuera de horario",
-                    date: date,
-                    initTime: "10:00:00",
-                    finalTime: formattedHora_Entrada,
-                    userInfo: user._id,
-                    centerInfo: center._id,
-                    status: "confirmed"
-                });
-            }
+				if (formattedHora_Entrada !== "10:00:00") {
+					appointments.push({
+						clientName: "Fuera de horario",
+						clientPhone: "Fuera de horario",
+						date: date,
+						initTime: "10:00:00",
+						finalTime: formattedHora_Entrada,
+						userInfo: user._id,
+						centerInfo: center._id,
+						status: "confirmed",
+					});
+				}
 
-            if (formattedHora_Salida !== "22:00:00") {
-                appointments.push({
-                    clientName: "Fuera de horario",
-                    clientPhone: "Fuera de horario",
-                    date: date,
-                    initTime: formattedHora_Salida,
-                    finalTime: "22:00:00",
-                    userInfo: user._id,
-                    centerInfo: center._id,
-                    status: "confirmed"
-                });
-            }
-        }
+				if (formattedHora_Salida !== "22:00:00") {
+					appointments.push({
+						clientName: "Fuera de horario",
+						clientPhone: "Fuera de horario",
+						date: date,
+						initTime: formattedHora_Salida,
+						finalTime: "22:00:00",
+						userInfo: user._id,
+						centerInfo: center._id,
+						status: "confirmed",
+					});
+				}
+			}
 
-        if (appointments.length > 0) {
-            await appointmentModel.bulkWrite(appointments.map(app => ({ insertOne: { document: app } })));
-            citasPorEmpleado[ID_Trabajador] = (citasPorEmpleado[ID_Trabajador] || 0) + appointments.length;
-        }
-    });
+			if (appointments.length > 0) {
+				await appointmentModel.bulkWrite(
+					appointments.map((app) => ({ insertOne: { document: app } }))
+				);
+				citasPorEmpleado[ID_Trabajador] =
+					(citasPorEmpleado[ID_Trabajador] || 0) + appointments.length;
+			}
+		});
 
-    await Promise.all(promises);
+		await Promise.all(promises);
 
-    res.status(200).json({
-        message: "Citas importadas exitosamente",
-        filasProcesadas,
-        citasPorEmpleado,
-    });
-} catch (error) {
-    console.error(error);
-    res.status(500).send("Error al importar citas");
-}
-
+		res.status(200).json({
+			message: "Citas importadas exitosamente",
+			filasProcesadas,
+			citasPorEmpleado,
+		});
+	} catch (error) {
+		console.error(error);
+		res.status(500).send("Error al importar citas");
+	}
 });
-
-
-
-
 
 export default appointmentRouter;
