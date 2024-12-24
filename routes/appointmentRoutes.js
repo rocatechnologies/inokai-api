@@ -883,17 +883,17 @@ appointmentRouter.post(
 				centerInfo: user2.centerInfo, // Cambiar el centro si es diferente
 			}));
         // Filtrar citas relevantes para ambos empleados y días
-        const appointmentsEmployee1 = await appointmentModel.find({
-            date: formattedDate1,
-            userInfo: employee1,
-            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo","Compensado", "Reyes", "Festivo", "Fuera de horario"] }
-        });
+        // const appointmentsEmployee1 = await appointmentModel.find({
+        //     date: formattedDate1,
+        //     userInfo: employee1,
+        //     clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo","Compensado", "Reyes", "Festivo", "Fuera de horario"] }
+        // });
 
-        const appointmentsEmployee2 = await appointmentModel.find({
-            date: formattedDate2,
-            userInfo: employee2,
-            clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo","Compensado", "Reyes", "Festivo", "Fuera de horario"] }
-        });
+        // const appointmentsEmployee2 = await appointmentModel.find({
+        //     date: formattedDate2,
+        //     userInfo: employee2,
+        //     clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo","Compensado", "Reyes", "Festivo", "Fuera de horario"] }
+        // });
 
 			const updatedAppointments2 = appointmentsEmployee2.map((app) => ({
 				...app._doc,
