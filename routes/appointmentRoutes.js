@@ -40,188 +40,145 @@ appointmentRouter.get(
 	}
 );
 
-/* get all appointments of a center by day based on user logged in
-	esta parte es la que hace funcionar el calendario mandando todas las citas y horas de ese dia
-	ademas tiene un filtro para navegar para dias anteriores
-*/
-
-//viejo enpoint creo hay que borrar actualizado abajo
-// appointmentRouter.get("/get-all-appointments/:selectedDB",isAuth,async (req, res) => {
-// 		console.log("en conseguir todos los appointments");
-
-// 		try {
-// 			const { selectedDB } = req.params;
-// 			const { centerInfo } = req.user;
-// 			const { filterDate, filterCenter } = req.query;
-
-//             console.log(req.user,'chedsfsdfsdfsdfsdfsdfsdfsdfck')
-
-// 			//selecting database
-// 			const db = mongoose.connection.useDb(selectedDB);
-// 			const appointmentModel = db.model("Appointment", Appointment.schema);
-
-// 			//lo defino porque necesito el populate del user nada mas
-// 			db.model("User", User.schema);
-
-// 			const query = {
-// 				centerInfo: filterCenter || centerInfo,
-// 				date: filterDate,
-// 				status: { $in: ["confirmed", ""] }, // Buscar citas con estado "confirmed" o ""
-// 			};
-
-// 			const appointments = await appointmentModel
-// 				.find(query)
-// 				.populate("userInfo");
-// 			console.log("la query", query);
-
-// 			console.log("los appointments", appointments);
-
-// 			const usersInAppointments = [];
-// 			const emailSet = new Set();
-// 			const appointments2 = [];
-// 			//aqui es para formatear los datos
-// 			for (let i = 0; i < appointments.length; i++) {
-// 				const userData = appointments[i]["userInfo"];
-
-// 				const data = appointments[i];
-
-// 				const myObjet = {
-// 					_id: data._id,
-// 					clientName: data.clientName,
-// 					clientPhone: data.clientPhone,
-// 					date: data.date,
-// 					initTime: data.initTime,
-// 					finalTime: data.finalTime,
-// 					isCancel: data.isCancel,
-// 					userInfo: data.userInfo,
-// 					user_id: data["userInfo"]["_id"],
-// 					centerInfo: data.centerInfo,
-// 					services: data.services,
-// 					remarks: data.remarks,
-// 					createdAt: data.createdAt,
-// 					createdBy: data.createdBy,
-// 					status: data.status,
-// 				};
-
-// 				appointments2.push(myObjet);
-
-// 				if (!emailSet.has(userData.email)) {
-// 					emailSet.add(userData.email);
-// 					usersInAppointments.push({
-// 						email: userData.email,
-// 						name: userData.name,
-// 						user_id: userData._id,
-// 						profileImgUrl: userData.profileImgUrl,
-// 					});
-// 					console.log(userData.profileImgUrl);
-// 				}
-// 			}
-
-// 			res.json({ appointments2, usersInAppointments });
-// 		} catch (error) {
-// 			console.log(error);
-// 			res.json({ message: "error en el servidor" });
-// 		}
-// 	}
-// );
-
-//editar cita
 
 appointmentRouter.get(
+	"/get-all-appointments/:selectedDB",
+	isAuth,
+	async (req, res) => {
+		console.log("en conseguir todos los appointments");
+		try {
+			const { selectedDB } = req.params;
+			const { centerInfo } = req.user;
+			const { filterDate, filterCenter } = req.query;
+			//selecting database
+			const db = mongoose.connection.useDb(selectedDB);
+			const appointmentModel = db.model("Appointment", Appointment.schema);
+			//lo defino porque necesito el populate del user nada mas
+			db.model("User", User.schema);
+			const query = {
+				centerInfo: filterCenter || centerInfo,
+				date: filterDate,
+				status: { $in: ["confirmed", "noShow", ""] }, // Buscar citas con estado "confirmed" o "",
+				userInfo: { $ne: null } // Filtrar las citas sin usuario asociado
+			};
+			const appointments = await appointmentModel
+				.find(query)
+				.populate("userInfo");
+            console.log("la query", query);
+            console.log("los appointments", appointments);
+			const usersInAppointments = [];
+			const emailSet = new Set();
+			const appointments2 = [];
+			//aqui es para formatear los datos
+			for (let i = 0; i < appointments.length; i++) {
+				const userData = appointments[i]["userInfo"];
+				const data = appointments[i];
+				const myObjet = {
+					_id: data._id,
+					clientName: data.clientName,
+					clientPhone: data.clientPhone,
+					date: data.date,
+					initTime: data.initTime,
+					finalTime: data.finalTime,
+					isCancel: data.isCancel,
+    					userInfo: data.userInfo || null,
+                                        user_id: data["userInfo"] ? data["userInfo"]["_id"] : null, // Verificar si userInfo no es null
+					centerInfo: data.centerInfo,
+					services: data.services,
+					remarks: data.remarks,
+					createdAt: data.createdAt,
     "/get-all-appointments/:selectedDB",
     isAuth,
     async (req, res) => {
-      console.log("En conseguir todos los appointments");
-  
-      try {
-        const { selectedDB } = req.params;
-        const { centerInfo } = req.user;
-        const { filterDate, filterCenter } = req.query;
+        console.log("En conseguir todos los appointments");
+        try {
+            const { selectedDB } = req.params;
+            const { centerInfo } = req.user;
+            const { filterDate, filterCenter } = req.query;
+            // Seleccionar base de datos
+            const db = mongoose.connection.useDb(selectedDB);
+            const appointmentModel = db.model("Appointment", Appointment.schema);
+            // Definir User model para el populate
+            db.model("User", User.schema);
+            // Crear la consulta
+            const query = {
+                centerInfo: filterCenter || centerInfo,
+                date: filterDate,
+                status: { $in: ["confirmed", ""] }, // Buscar citas con estado "confirmed" o ""
+                userInfo: { $ne: null }, // Filtrar las citas sin usuario asociado
+            };
+            const appointments = await appointmentModel
+                .find(query)
+                .populate("userInfo");
+            console.log("La query", query);
+            console.log("Los appointments", appointments);
+            const usersInAppointments = [];
+            const emailSet = new Set();
+            const appointments2 = [];
+            // Formatear los datos
+            for (let i = 0; i < appointments.length; i++) {
+                const data = appointments[i];
+                const userData = data["userInfo"];
+                // Validar userInfo antes de procesar
+                if (!userData || !userData._id) {
+                    console.warn(`Cita con ID ${data._id} tiene un userInfo inválido.`);
+                    continue; // Ignorar citas con userInfo inválido
+                }
+                const myObjet = {
+                    _id: data._id,
+                    clientName: data.clientName,
+                    clientPhone: data.clientPhone,
+                    date: data.date,
+                    initTime: data.initTime,
+                    finalTime: data.finalTime,
+                    isCancel: data.isCancel,
+                    userInfo: data.userInfo,
+                    user_id: userData._id,
+                    centerInfo: data.centerInfo,
+                    services: data.services,
+                    remarks: data.remarks,
+                    createdAt: data.createdAt,
+                    createdBy: data.createdBy,
+					status: data.status
+				};
+				appointments2.push(myObjet);
+				if (!emailSet.has(userData.email)) {
+					emailSet.add(userData.email);
+					usersInAppointments.push({
+						email: userData.email,
+						name: userData.name,
+						user_id: userData._id,
+						profileImgUrl: userData.profileImgUrl
+					});
+					console.log(userData.profileImgUrl);
+				}
+			}
+                    status: data.status,
+                };
+                appointments2.push(myObjet);
+                if (!emailSet.has(userData.email)) {
+                    emailSet.add(userData.email);
+                    usersInAppointments.push({
+                        email: userData.email,
+                        name: userData.name,
+                        user_id: userData._id,
+                        profileImgUrl: userData.profileImgUrl,
+                    });
+                    console.log(userData.profileImgUrl);
+                }
+            }
 
-        console.log(filterDate,'viendo el filter date')
-        console.log(centerInfo,'viendo el center nfo')
-
-         
-  
-        // Seleccionar base de datos
-        const db = mongoose.connection.useDb(selectedDB);
-        const appointmentModel = db.model("Appointment", Appointment.schema);
-        const userModel = db.model("User", User.schema);
-  
-        // Construcción de la query de citas
-        const appointmentQuery = {
-          centerInfo: filterCenter || centerInfo,
-          date: filterDate,
-          status: { $in: ["confirmed", ""] }, // Buscar citas con estado "confirmed" o ""
-        };
-  
-        // Obtener las citas y los usuarios
-        const [appointments, allUsers] = await Promise.all([
-          appointmentModel.find(appointmentQuery).populate("userInfo"),
-          userModel.find({ centerInfo: centerInfo }), // Obtén todos los usuarios sin filtrar
-        ]);
-  
-        // console.log("Query de citas:", appointmentQuery);
-        // console.log("Citas obtenidas:", appointments);
-  
-        const usersInAppointments = [];
-        const emailSet = new Set();
-        const appointments2 = [];
-  
-        // Formatear datos de citas
-        for (let i = 0; i < appointments.length; i++) {
-          const userData = appointments[i]["userInfo"];
-          const data = appointments[i];
-  
-          const myObjet = {
-            _id: data._id,
-            clientName: data.clientName,
-            clientPhone: data.clientPhone,
-            date: data.date,
-            initTime: data.initTime,
-            finalTime: data.finalTime,
-            isCancel: data.isCancel,
-            userInfo: data.userInfo,
-            user_id: userData?._id, // Manejar el caso en que no haya usuario asociado
-            centerInfo: data.centerInfo,
-            services: data.services,
-            remarks: data.remarks,
-            createdAt: data.createdAt,
-            createdBy: data.createdBy,
-            status: data.status,
-          };
-  
-          appointments2.push(myObjet);
-  
-          if (userData && !emailSet.has(userData.email)) {
-            emailSet.add(userData.email);
-            usersInAppointments.push({
-              email: userData.email,
-              name: userData.name,
-              user_id: userData._id,
-              profileImgUrl: userData.profileImgUrl,
-            });
-            console.log(userData.profileImgUrl);
-          }
+			res.json({ appointments2, usersInAppointments });
+		} catch (error) {
+			console.log(error);
+			res.json({ message: "error en el servidor" });
+		}
+	}
+            res.json({ appointments2, usersInAppointments });
+        } catch (error) {
+            console.error("Error en el servidor", error);
+            res.status(500).json({ message: "Error en el servidor" });
         }
-  
-        // Agregar usuarios sin citas al resultado
-        const usersWithoutAppointments = allUsers
-          .filter((user) => !emailSet.has(user.email))
-          .map((user) => ({
-            email: user.email,
-            name: user.name,
-            user_id: user._id,
-            profileImgUrl: user.profileImgUrl,
-          }));
-  
-        usersInAppointments.push(...usersWithoutAppointments);
-  
-        res.json({ appointments2, usersInAppointments });
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error en el servidor" });
-      }
     }
 );
   
