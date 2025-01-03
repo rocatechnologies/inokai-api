@@ -8,7 +8,8 @@ const centerSchema = new Schema({
     userInfo: [{
         type: Schema.Types.ObjectId,
         ref: 'User'
-    }]
+    }],
+    phoneNumber: {type: String },
 });
 
 const Center = mongoose.model('Center', centerSchema);
