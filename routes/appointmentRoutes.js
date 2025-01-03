@@ -152,7 +152,7 @@ appointmentRouter.get(
         const appointmentQuery = {
           centerInfo: filterCenter || centerInfo,
           date: filterDate,
-          status: { $in: ["confirmed", ""] }, // Buscar citas con estado "confirmed" o ""
+          status: { $in: ["confirmed", "noShow", ""] }, // Buscar citas con estado "confirmed" o ""
         };
   
         // Obtener las citas y los usuarios
