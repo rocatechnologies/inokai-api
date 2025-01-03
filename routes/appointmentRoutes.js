@@ -40,6 +40,7 @@ appointmentRouter.get(
 	}
 );
 
+
 appointmentRouter.get(
 	"/get-all-appointments/:selectedDB",
 	isAuth,
@@ -236,6 +237,7 @@ appointmentRouter.get(
             },
           };
     
+		  console.log("QUERY", query)
   
         // Obtener citas del usuario
         const userAppointments = await appointmentModel.find(query).populate("userInfo");
@@ -277,6 +279,9 @@ appointmentRouter.get(
   );
   
 
+
+
+
 appointmentRouter.put(
 	"/edit-appointment/:selectedDB/:appointmentId",
 	isAuth,
@@ -298,8 +303,8 @@ appointmentRouter.put(
 				});
 			});
 			req.body.services = matchingServices;
-			// Agregar el campo modifiedAt con la fecha y hora actual
 			req.body.modifiedAt = new Date();
+
 			await appointmentModel.findByIdAndUpdate(appointmentId, req.body);
 
 			res.json({ message: "cita editada exitosamente" });
@@ -341,7 +346,6 @@ appointmentRouter.delete(
 		}
 	}
 );
-
 // noswhow cita
 appointmentRouter.put(
 	"/no-show-appointment/:selectedDB/:appointmentId",
@@ -374,7 +378,6 @@ appointmentRouter.put(
 		}
 	}
 );
-
 /*create cita en el centro
 en este metodo ya obtenemos los datos de la cita que vienen del frontend para poderla crear y el id del usuario/emplealdo al que estara la cita relacionada
 */
