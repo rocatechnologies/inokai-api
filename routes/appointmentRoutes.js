@@ -42,51 +42,6 @@ appointmentRouter.get(
 
 
 appointmentRouter.get(
-	"/get-all-appointments/:selectedDB",
-	isAuth,
-	async (req, res) => {
-		console.log("en conseguir todos los appointments");
-		try {
-			const { selectedDB } = req.params;
-			const { centerInfo } = req.user;
-			const { filterDate, filterCenter } = req.query;
-			//selecting database
-			const db = mongoose.connection.useDb(selectedDB);
-			const appointmentModel = db.model("Appointment", Appointment.schema);
-			//lo defino porque necesito el populate del user nada mas
-			db.model("User", User.schema);
-			const query = {
-				centerInfo: filterCenter || centerInfo,
-				date: filterDate,
-				status: { $in: ["confirmed", "noShow", ""] }, // Buscar citas con estado "confirmed" o "",
-				userInfo: { $ne: null } // Filtrar las citas sin usuario asociado
-			};
-			const appointments = await appointmentModel
-				.find(query)
-				.populate("userInfo");
-            console.log("la query", query);
-            console.log("los appointments", appointments);
-			const usersInAppointments = [];
-			const emailSet = new Set();
-			const appointments2 = [];
-			//aqui es para formatear los datos
-			for (let i = 0; i < appointments.length; i++) {
-				const userData = appointments[i]["userInfo"];
-				const data = appointments[i];
-				const myObjet = {
-					_id: data._id,
-					clientName: data.clientName,
-					clientPhone: data.clientPhone,
-					date: data.date,
-					initTime: data.initTime,
-					finalTime: data.finalTime,
-					isCancel: data.isCancel,
-    					userInfo: data.userInfo || null,
-                                        user_id: data["userInfo"] ? data["userInfo"]["_id"] : null, // Verificar si userInfo no es null
-					centerInfo: data.centerInfo,
-					services: data.services,
-					remarks: data.remarks,
-					createdAt: data.createdAt,
     "/get-all-appointments/:selectedDB",
     isAuth,
     async (req, res) => {
