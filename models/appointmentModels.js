@@ -23,6 +23,7 @@ const appointmentSchema = new Schema({
     createdBy: { type: String},
     status: {type: String, default: "confirmed"},
     createdAt: { type: Date, default: Date.now }, 
+    modifiedAt: { type: Date, default: Date.now }, 
 
 });
 

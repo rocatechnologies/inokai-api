@@ -334,7 +334,8 @@ appointmentRouter.put(
 				});
 			});
 			req.body.services = matchingServices;
-
+			// Agregar el campo modifiedAt con la fecha y hora actual
+			req.body.modifiedAt = new Date();
 			await appointmentModel.findByIdAndUpdate(appointmentId, req.body);
 
 			res.json({ message: "cita editada exitosamente" });
@@ -359,6 +360,7 @@ appointmentRouter.delete(
 			const updatedAppointment = await appointmentModel.findByIdAndUpdate(
 				appointmentId,
 				{ status: "canceled" },
+				modifiedAt: new Date() // Actualizar el campo modifiedAt con la fecha actual 
 				{ new: true }
 			);
 
@@ -392,6 +394,7 @@ appointmentRouter.put(
 			const updatedAppointment = await appointmentModel.findByIdAndUpdate(
 				appointmentId,
 				{ status: "noShow" },
+				modifiedAt: new Date() // Actualizar el campo modifiedAt con la fecha actual 
 				{ new: true }
 			);
 
