@@ -94,21 +94,7 @@ appointmentRouter.get(
                     remarks: data.remarks,
                     createdAt: data.createdAt,
                     createdBy: data.createdBy,
-					status: data.status
-				};
-				appointments2.push(myObjet);
-				if (!emailSet.has(userData.email)) {
-					emailSet.add(userData.email);
-					usersInAppointments.push({
-						email: userData.email,
-						name: userData.name,
-						user_id: userData._id,
-						profileImgUrl: userData.profileImgUrl
-					});
-					console.log(userData.profileImgUrl);
-				}
-			}
-                    status: data.status,
+					status: data.status,
                 };
                 appointments2.push(myObjet);
                 if (!emailSet.has(userData.email)) {
