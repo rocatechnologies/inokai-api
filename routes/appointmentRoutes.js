@@ -247,7 +247,7 @@ appointmentRouter.get(
 		const db = mongoose.connection.useDb(selectedDB);
 		const appointmentModel = db.model("Appointment", Appointment.schema);
   
-		// Calcular inicio y fin de la semana (lunes a domingo)
+		// Calcular inicio y fin de la semana 
 		const givenDate = new Date(date);
 		const startOfWeek = new Date(givenDate);
 		const endOfWeek = new Date(givenDate);
@@ -268,6 +268,8 @@ appointmentRouter.get(
 			$lte: endOfWeek,
 		  },
 		};
+
+		console.log("QUERY", query)
   
 		// Obtener citas del usuario
 		const userAppointments = await appointmentModel.find(query).populate("userInfo");
