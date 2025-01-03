@@ -40,21 +40,24 @@ appointmentRouter.get(
 	}
 );
 
-
 appointmentRouter.get(
     "/get-all-appointments/:selectedDB",
     isAuth,
     async (req, res) => {
         console.log("En conseguir todos los appointments");
+
         try {
             const { selectedDB } = req.params;
             const { centerInfo } = req.user;
             const { filterDate, filterCenter } = req.query;
+
             // Seleccionar base de datos
             const db = mongoose.connection.useDb(selectedDB);
             const appointmentModel = db.model("Appointment", Appointment.schema);
+
             // Definir User model para el populate
             db.model("User", User.schema);
+
             // Crear la consulta
             const query = {
                 centerInfo: filterCenter || centerInfo,
@@ -62,23 +65,29 @@ appointmentRouter.get(
                 status: { $in: ["confirmed", ""] }, // Buscar citas con estado "confirmed" o ""
                 userInfo: { $ne: null }, // Filtrar las citas sin usuario asociado
             };
+
             const appointments = await appointmentModel
                 .find(query)
                 .populate("userInfo");
+
             console.log("La query", query);
             console.log("Los appointments", appointments);
+
             const usersInAppointments = [];
             const emailSet = new Set();
             const appointments2 = [];
+
             // Formatear los datos
             for (let i = 0; i < appointments.length; i++) {
                 const data = appointments[i];
                 const userData = data["userInfo"];
+
                 // Validar userInfo antes de procesar
                 if (!userData || !userData._id) {
                     console.warn(`Cita con ID ${data._id} tiene un userInfo inválido.`);
                     continue; // Ignorar citas con userInfo inválido
                 }
+
                 const myObjet = {
                     _id: data._id,
                     clientName: data.clientName,
@@ -94,9 +103,11 @@ appointmentRouter.get(
                     remarks: data.remarks,
                     createdAt: data.createdAt,
                     createdBy: data.createdBy,
-					status: data.status,
+                    status: data.status,
                 };
+
                 appointments2.push(myObjet);
+
                 if (!emailSet.has(userData.email)) {
                     emailSet.add(userData.email);
                     usersInAppointments.push({
@@ -109,12 +120,6 @@ appointmentRouter.get(
                 }
             }
 
-			res.json({ appointments2, usersInAppointments });
-		} catch (error) {
-			console.log(error);
-			res.json({ message: "error en el servidor" });
-		}
-	}
             res.json({ appointments2, usersInAppointments });
         } catch (error) {
             console.error("Error en el servidor", error);
@@ -177,8 +182,8 @@ appointmentRouter.get(
               $lte: formatToMMDDYYYY(endOfWeek),
             },
           };
-    
 		  console.log("QUERY", query)
+
   
         // Obtener citas del usuario
         const userAppointments = await appointmentModel.find(query).populate("userInfo");
@@ -319,6 +324,7 @@ appointmentRouter.put(
 		}
 	}
 );
+
 /*create cita en el centro
 en este metodo ya obtenemos los datos de la cita que vienen del frontend para poderla crear y el id del usuario/emplealdo al que estara la cita relacionada
 */
