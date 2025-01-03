@@ -259,8 +259,9 @@ appointmentRouter.get(
   
 		console.log("Rango de la semana:", startOfWeek, endOfWeek);
   
-		// Construir query
+		// Construir query con validación de userInfo
 		const query = {
+		  userInfo: { $ne: null }, // Asegurarse de que userInfo no sea null
 		  userInfo: userId,
 		  date: {
 			$gte: startOfWeek,
@@ -273,7 +274,7 @@ appointmentRouter.get(
   
 		console.log("Citas del usuario:", userAppointments);
   
-		// Formatear respuesta y manejar casos en los que userInfo es null
+		// Formatear respuesta
 		const formattedAppointments = userAppointments.map((appointment) => ({
 		  _id: appointment._id,
 		  clientName: appointment.clientName,
@@ -295,26 +296,17 @@ appointmentRouter.get(
 				email: appointment.userInfo.email,
 				profileImgUrl: appointment.userInfo.profileImgUrl,
 			  }
-			: null, // Manejar el caso de userInfo null
+			: null, // Esto nunca será null debido al filtro en la query
 		}));
   
-		// Filtrar usuarios únicos para usersInAppointments
-		const usersInAppointments = userAppointments
-		  .filter((appointment) => appointment.userInfo)
-		  .map((appointment) => ({
-			_id: appointment.userInfo._id,
-			name: appointment.userInfo.name,
-			email: appointment.userInfo.email,
-			profileImgUrl: appointment.userInfo.profileImgUrl,
-		  }));
-  
-		res.json({ appointments2: formattedAppointments, usersInAppointments });
+		res.json({ appointments2: formattedAppointments });
 	  } catch (error) {
 		console.error(error);
 		res.status(500).json({ message: "Error en el servidor" });
 	  }
 	}
   );
+  
 
 
 
