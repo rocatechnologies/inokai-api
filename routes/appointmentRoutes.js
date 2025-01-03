@@ -219,8 +219,8 @@ appointmentRouter.get(
 		const query = {
 			userInfo: { $exists: true, $ne: null, $eq: userId },
 			date: {
-			  $gte: startOfWeek,
-			  $lte: endOfWeek,
+				$gte: startOfWeek.toISOString().split('T')[0],
+				$lte: endOfWeek.toISOString().split('T')[0],
 			},
 		  };
 
