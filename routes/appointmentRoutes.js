@@ -388,6 +388,39 @@ appointmentRouter.delete(
 	}
 );
 
+// noswhow cita
+appointmentRouter.put(
+	"/no-show-appointment/:selectedDB/:appointmentId",
+	isAuth,
+	async (req, res) => {
+		console.log("endpoint cambiar a No presentado cita");
+		try {
+			const { selectedDB, appointmentId } = req.params;
+
+			const db = mongoose.connection.useDb(selectedDB);
+			const appointmentModel = db.model("Appointment", Appointment.schema);
+
+			const updatedAppointment = await appointmentModel.findByIdAndUpdate(
+				appointmentId,
+				{ status: "noShow" },
+				{ new: true }
+			);
+
+			if (!updatedAppointment) {
+				return res.status(404).json({ message: "Cita no encontrada" });
+			}
+
+			res.json({
+				message: "Cita no presentada y estado actualizado exitosamente",
+				appointment: updatedAppointment,
+			});
+		} catch (error) {
+			console.log(error);
+			res.status(500).json({ message: "Error en el servidor" });
+		}
+	}
+);
+
 /*create cita en el centro
 en este metodo ya obtenemos los datos de la cita que vienen del frontend para poderla crear y el id del usuario/emplealdo al que estara la cita relacionada
 */
