@@ -261,13 +261,12 @@ appointmentRouter.get(
   
 		// Construir query con validación de userInfo
 		const query = {
-		  userInfo: { $ne: null }, // Asegurarse de que userInfo no sea null
-		  userInfo: userId,
-		  date: {
-			$gte: startOfWeek,
-			$lte: endOfWeek,
-		  },
-		};
+			userInfo: { $exists: true, $ne: null, $eq: userId },
+			date: {
+			  $gte: startOfWeek,
+			  $lte: endOfWeek,
+			},
+		  };
 
 		console.log("QUERY", query)
   
