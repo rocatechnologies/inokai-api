@@ -359,8 +359,7 @@ appointmentRouter.delete(
 
 			const updatedAppointment = await appointmentModel.findByIdAndUpdate(
 				appointmentId,
-				{ status: "canceled" },
-				modifiedAt: new Date() // Actualizar el campo modifiedAt con la fecha actual 
+				{ status: "canceled", modifiedAt: new Date() },
 				{ new: true }
 			);
 
@@ -393,8 +392,7 @@ appointmentRouter.put(
 
 			const updatedAppointment = await appointmentModel.findByIdAndUpdate(
 				appointmentId,
-				{ status: "noShow" },
-				modifiedAt: new Date() // Actualizar el campo modifiedAt con la fecha actual 
+				{ status: "noShow", modifiedAt: new Date() },
 				{ new: true }
 			);
 
