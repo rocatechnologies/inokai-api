@@ -44,176 +44,193 @@ appointmentRouter.get(
     "/get-all-appointments/:selectedDB",
     isAuth,
     async (req, res) => {
-        console.log("En conseguir todos los appointments");
+      console.log("En conseguir todos los appointments");
+  
+      try {
+        const { selectedDB } = req.params;
+        const { centerInfo } = req.user;
+        const { filterDate, filterCenter } = req.query;
 
-        try {
-            const { selectedDB } = req.params;
-            const { centerInfo } = req.user;
-            const { filterDate, filterCenter } = req.query;
+        console.log(filterDate,'viendo el filter date')
+        console.log(centerInfo,'viendo el center nfo')
 
-            // Seleccionar base de datos
-            const db = mongoose.connection.useDb(selectedDB);
-            const appointmentModel = db.model("Appointment", Appointment.schema);
-
-            // Definir User model para el populate
-            db.model("User", User.schema);
-
-            // Crear la consulta
-            const query = {
-                centerInfo: filterCenter || centerInfo,
-                date: filterDate,
-                status: { $in: ["confirmed", ""] }, // Buscar citas con estado "confirmed" o ""
-                userInfo: { $ne: null }, // Filtrar las citas sin usuario asociado
-            };
-
-            const appointments = await appointmentModel
-                .find(query)
-                .populate("userInfo");
-
-            console.log("La query", query);
-            console.log("Los appointments", appointments);
-
-            const usersInAppointments = [];
-            const emailSet = new Set();
-            const appointments2 = [];
-
-            // Formatear los datos
-            for (let i = 0; i < appointments.length; i++) {
-                const data = appointments[i];
-                const userData = data["userInfo"];
-
-                // Validar userInfo antes de procesar
-                if (!userData || !userData._id) {
-                    console.warn(`Cita con ID ${data._id} tiene un userInfo inválido.`);
-                    continue; // Ignorar citas con userInfo inválido
-                }
-
-                const myObjet = {
-                    _id: data._id,
-                    clientName: data.clientName,
-                    clientPhone: data.clientPhone,
-                    date: data.date,
-                    initTime: data.initTime,
-                    finalTime: data.finalTime,
-                    isCancel: data.isCancel,
-                    userInfo: data.userInfo,
-                    user_id: userData._id,
-                    centerInfo: data.centerInfo,
-                    services: data.services,
-                    remarks: data.remarks,
-                    createdAt: data.createdAt,
-                    createdBy: data.createdBy,
-                    status: data.status,
-                };
-
-                appointments2.push(myObjet);
-
-                if (!emailSet.has(userData.email)) {
-                    emailSet.add(userData.email);
-                    usersInAppointments.push({
-                        email: userData.email,
-                        name: userData.name,
-                        user_id: userData._id,
-                        profileImgUrl: userData.profileImgUrl,
-                    });
-                    console.log(userData.profileImgUrl);
-                }
-            }
-
-            res.json({ appointments2, usersInAppointments });
-        } catch (error) {
-            console.error("Error en el servidor", error);
-            res.status(500).json({ message: "Error en el servidor" });
+         
+  
+        // Seleccionar base de datos
+        const db = mongoose.connection.useDb(selectedDB);
+        const appointmentModel = db.model("Appointment", Appointment.schema);
+        const userModel = db.model("User", User.schema);
+  
+        // Construcción de la query de citas
+        const appointmentQuery = {
+          centerInfo: filterCenter || centerInfo,
+          date: filterDate,
+          status: { $in: ["confirmed", ""] }, // Buscar citas con estado "confirmed" o ""
+        };
+  
+        // Obtener las citas y los usuarios
+        const [appointments, allUsers] = await Promise.all([
+          appointmentModel.find(appointmentQuery).populate("userInfo"),
+          userModel.find({ centerInfo: centerInfo }), // Obtén todos los usuarios sin filtrar
+        ]);
+  
+        // console.log("Query de citas:", appointmentQuery);
+        // console.log("Citas obtenidas:", appointments);
+  
+        const usersInAppointments = [];
+        const emailSet = new Set();
+        const appointments2 = [];
+  
+        // Formatear datos de citas
+        for (let i = 0; i < appointments.length; i++) {
+          const userData = appointments[i]["userInfo"];
+          const data = appointments[i];
+  
+          const myObjet = {
+            _id: data._id,
+            clientName: data.clientName,
+            clientPhone: data.clientPhone,
+            date: data.date,
+            initTime: data.initTime,
+            finalTime: data.finalTime,
+            isCancel: data.isCancel,
+            userInfo: data.userInfo,
+            user_id: userData?._id, // Manejar el caso en que no haya usuario asociado
+            centerInfo: data.centerInfo,
+            services: data.services,
+            remarks: data.remarks,
+            createdAt: data.createdAt,
+            createdBy: data.createdBy,
+            status: data.status,
+          };
+  
+          appointments2.push(myObjet);
+  
+          if (userData && !emailSet.has(userData.email)) {
+            emailSet.add(userData.email);
+            usersInAppointments.push({
+              email: userData.email,
+              name: userData.name,
+              user_id: userData._id,
+              profileImgUrl: userData.profileImgUrl,
+            });
+            console.log(userData.profileImgUrl);
+          }
         }
+  
+        // Agregar usuarios sin citas al resultado
+        const usersWithoutAppointments = allUsers
+          .filter((user) => !emailSet.has(user.email))
+          .map((user) => ({
+            email: user.email,
+            name: user.name,
+            user_id: user._id,
+            profileImgUrl: user.profileImgUrl,
+          }));
+  
+        usersInAppointments.push(...usersWithoutAppointments);
+  
+        res.json({ appointments2, usersInAppointments });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error en el servidor" });
+      }
     }
 );
-  //vista semanal
+  
+
+/////////////////////// get week appointments by user 
 appointmentRouter.get(
-	"/get-user-week-appointments/:selectedDB",
-	isAuth,
-	async (req, res) => {
-	  console.log("En conseguir citas del usuario para la semana");
+    "/get-user-week-appointments/:selectedDB",
+    isAuth,
+    async (req, res) => {
+      console.log("En conseguir citas del usuario para la semana");
   
-	  try {
-		const { selectedDB } = req.params;
-		const { userId, date } = req.query; // `userId` y `date` enviados desde el frontend
+      try {
+        const { selectedDB } = req.params;
+        const { userId, date } = req.query; // `userId` y `date` enviados desde el frontend
   
-		if (!userId || !date) {
-		  return res
-			.status(400)
-			.json({ message: "Por favor proporciona el userId y la fecha." });
-		}
+        if (!userId || !date) {
+          return res
+            .status(400)
+            .json({ message: "Por favor proporciona el userId y la fecha." });
+        }
   
-		// Seleccionar base de datos
-		const db = mongoose.connection.useDb(selectedDB);
-		const appointmentModel = db.model("Appointment", Appointment.schema);
-		const userModel = db.model("User", User.schema);
+        // Seleccionar base de datos
+        const db = mongoose.connection.useDb(selectedDB);
+        const appointmentModel = db.model("Appointment", Appointment.schema);
+        const userModel = db.model("User", User.schema);
   
-		// Calcular inicio y fin de la semana (lunes a domingo)
-		const givenDate = new Date(date);
-		const startOfWeek = new Date(givenDate);
-		const endOfWeek = new Date(givenDate);
+        // Calcular inicio y fin de la semana (lunes a domingo)
+        const givenDate = new Date(date);
+        const startOfWeek = new Date(givenDate);
+        const endOfWeek = new Date(givenDate);
   
-		startOfWeek.setDate(givenDate.getDate() - givenDate.getDay() + 1); // Lunes
-		startOfWeek.setHours(0, 0, 0, 0); // Comienza a medianoche
-		endOfWeek.setDate(givenDate.getDate() - givenDate.getDay() + 7); // Domingo
-		endOfWeek.setHours(23, 59, 59, 999); // Termina al final del día
+        startOfWeek.setDate(givenDate.getDate() - givenDate.getDay() + 1); // Lunes
+        startOfWeek.setHours(0, 0, 0, 0); // Comienza a medianoche
+        endOfWeek.setDate(givenDate.getDate() - givenDate.getDay() + 7); // Domingo
+        endOfWeek.setHours(23, 59, 59, 999); // Termina al final del día
   
-		// Construir query
-		const query = {
-		  userInfo: userId,
-		  date: {
-			$gte: startOfWeek.toISOString(),
-			$lte: endOfWeek.toISOString(),
-		  },
-		};
+        // Convertir fechas a cadenas
+        const formatToMMDDYYYY = (date) => {
+          const month = (date.getMonth() + 1).toString().padStart(2, "0");
+          const day = date.getDate().toString().padStart(2, "0");
+          const year = date.getFullYear();
+          return `${month}/${day}/${year}`;
+        };
   
-		console.log("Rango de la semana:", startOfWeek, endOfWeek);
-		console.log("QUERY", query);
+        const formattedStartOfWeek = formatToMMDDYYYY(startOfWeek);
+        const formattedEndOfWeek = formatToMMDDYYYY(endOfWeek);
   
-		// Obtener citas del usuario
-		const userAppointments = await appointmentModel.find(query).populate("userInfo");
+        console.log("Rango de la semana:", formattedStartOfWeek, formattedEndOfWeek);
   
-		// Filtrar citas que no tienen usuario asociado
-		const filteredAppointments = userAppointments.filter(
-		  (appointment) => appointment.userInfo
-		);
+        // Construir query
+        const query = {
+            userInfo: userId,
+            date: {
+              $gte: formatToMMDDYYYY(startOfWeek),
+              $lte: formatToMMDDYYYY(endOfWeek),
+            },
+          };
+    
   
-		// Formatear respuesta solo con las citas que tienen usuario
-		const formattedAppointments = filteredAppointments.map((appointment) => ({
-		  _id: appointment._id,
-		  clientName: appointment.clientName,
-		  clientPhone: appointment.clientPhone,
-		  date: appointment.date,
-		  initTime: appointment.initTime,
-		  finalTime: appointment.finalTime,
-		  isCancel: appointment.isCancel,
-		  centerInfo: appointment.centerInfo,
-		  services: appointment.services,
-		  remarks: appointment.remarks,
-		  createdAt: appointment.createdAt,
-		  createdBy: appointment.createdBy,
-		  status: appointment.status,
-		  userInfo: {
-			_id: appointment.userInfo._id,
-			name: appointment.userInfo.name,
-			email: appointment.userInfo.email,
-			profileImgUrl: appointment.userInfo.profileImgUrl,
-		  },
-		}));
+        // Obtener citas del usuario
+        const userAppointments = await appointmentModel.find(query).populate("userInfo");
   
-		// Manejar caso en que no haya citas con usuario asociado
-		if (formattedAppointments.length === 0) {
-		  return res.status(404).json({ message: "No se encontraron citas con usuarios asociados." });
-		}
+        console.log("Citas del usuario:", userAppointments);
   
-		// Responder con las citas filtradas
-		res.json({ appointments: formattedAppointments });
-	  } catch (error) {
-		console.error(error);
-		res.status(500).json({ message: "Error en el servidor" });
-	  }
-	}
+        // Formatear respuesta
+        const formattedAppointments = userAppointments.map((appointment) => ({
+          _id: appointment._id,
+          clientName: appointment.clientName,
+          clientPhone: appointment.clientPhone,
+          date: appointment.date,
+          initTime: appointment.initTime,
+          finalTime: appointment.finalTime,
+          isCancel: appointment.isCancel,
+          centerInfo: appointment.centerInfo,
+          services: appointment.services,
+          remarks: appointment.remarks,
+          createdAt: appointment.createdAt,
+          createdBy: appointment.createdBy,
+          status: appointment.status,
+          userInfo: appointment.userInfo
+            ? {
+                _id: appointment.userInfo._id,
+                name: appointment.userInfo.name,
+                email: appointment.userInfo.email,
+                profileImgUrl: appointment.userInfo.profileImgUrl,
+              }
+            : null,
+        }));
+  
+        res.json({ appointments2: formattedAppointments, usersInAppointments: [formattedAppointments[0]['userInfo']], });
+
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error en el servidor" });
+      }
+    }
   );
 
 
