@@ -139,98 +139,87 @@ appointmentRouter.get(
 );
   
 
-/////////////////////// get week appointments by user 
 appointmentRouter.get(
-    "/get-user-week-appointments/:selectedDB",
-    isAuth,
-    async (req, res) => {
-      console.log("En conseguir citas del usuario para la semana");
+	"/get-user-week-appointments/:selectedDB",
+	isAuth,
+	async (req, res) => {
+	  console.log("En conseguir citas del usuario para la semana");
   
-      try {
-        const { selectedDB } = req.params;
-        const { userId, date } = req.query; // `userId` y `date` enviados desde el frontend
+	  try {
+		const { selectedDB } = req.params;
+		const { userId, date } = req.query;
   
-        if (!userId || !date) {
-          return res
-            .status(400)
-            .json({ message: "Por favor proporciona el userId y la fecha." });
-        }
+		if (!userId || !date) {
+		  return res.status(400).json({ message: "Por favor proporciona el userId y la fecha." });
+		}
   
-        // Seleccionar base de datos
-        const db = mongoose.connection.useDb(selectedDB);
-        const appointmentModel = db.model("Appointment", Appointment.schema);
-        const userModel = db.model("User", User.schema);
+		const db = mongoose.connection.useDb(selectedDB);
+		const appointmentModel = db.model("Appointment", Appointment.schema);
   
-        // Calcular inicio y fin de la semana (lunes a domingo)
-        const givenDate = new Date(date);
-        const startOfWeek = new Date(givenDate);
-        const endOfWeek = new Date(givenDate);
+		const givenDate = new Date(date);
+		const startOfWeek = new Date(givenDate);
+		const endOfWeek = new Date(givenDate);
   
-        startOfWeek.setDate(givenDate.getDate() - givenDate.getDay() + 1); // Lunes
-        startOfWeek.setHours(0, 0, 0, 0); // Comienza a medianoche
-        endOfWeek.setDate(givenDate.getDate() - givenDate.getDay() + 7); // Domingo
-        endOfWeek.setHours(23, 59, 59, 999); // Termina al final del día
+		startOfWeek.setDate(givenDate.getDate() - givenDate.getDay() + 1);
+		startOfWeek.setHours(0, 0, 0, 0);
+		endOfWeek.setDate(givenDate.getDate() - givenDate.getDay() + 7);
+		endOfWeek.setHours(23, 59, 59, 999);
   
-        // Convertir fechas a cadenas
-        const formatToMMDDYYYY = (date) => {
-          const month = (date.getMonth() + 1).toString().padStart(2, "0");
-          const day = date.getDate().toString().padStart(2, "0");
-          const year = date.getFullYear();
-          return `${month}/${day}/${year}`;
-        };
+		const query = {
+		  userInfo: userId,
+		  date: {
+			$gte: startOfWeek.toISOString(),
+			$lte: endOfWeek.toISOString(),
+		  },
+		};
   
-        const formattedStartOfWeek = formatToMMDDYYYY(startOfWeek);
-        const formattedEndOfWeek = formatToMMDDYYYY(endOfWeek);
+		console.log("Rango de la semana:", startOfWeek, endOfWeek);
+		console.log("QUERY", query);
   
-        console.log("Rango de la semana:", formattedStartOfWeek, formattedEndOfWeek);
+		const userAppointments = await appointmentModel.find(query).populate("userInfo");
   
-        // Construir query
-        const query = {
-            userInfo: userId,
-            date: {
-              $gte: formatToMMDDYYYY(startOfWeek),
-              $lte: formatToMMDDYYYY(endOfWeek),
-            },
-          };
-    
+		console.log("Citas del usuario:", userAppointments);
   
-        // Obtener citas del usuario
-        const userAppointments = await appointmentModel.find(query).populate("userInfo");
+		if (userAppointments.length === 0) {
+		  return res.status(404).json({ message: "No se encontraron citas para esta semana." });
+		}
   
-        console.log("Citas del usuario:", userAppointments);
+		const formattedAppointments = userAppointments.map((appointment) => ({
+		  _id: appointment._id,
+		  clientName: appointment.clientName,
+		  clientPhone: appointment.clientPhone,
+		  date: appointment.date,
+		  initTime: appointment.initTime,
+		  finalTime: appointment.finalTime,
+		  isCancel: appointment.isCancel,
+		  centerInfo: appointment.centerInfo,
+		  services: appointment.services,
+		  remarks: appointment.remarks,
+		  createdAt: appointment.createdAt,
+		  createdBy: appointment.createdBy,
+		  status: appointment.status,
+		  userInfo: appointment.userInfo
+			? {
+				_id: appointment.userInfo._id,
+				name: appointment.userInfo.name,
+				email: appointment.userInfo.email,
+				profileImgUrl: appointment.userInfo.profileImgUrl,
+			  }
+			: null,
+		}));
   
-        // Formatear respuesta
-        const formattedAppointments = userAppointments.map((appointment) => ({
-          _id: appointment._id,
-          clientName: appointment.clientName,
-          clientPhone: appointment.clientPhone,
-          date: appointment.date,
-          initTime: appointment.initTime,
-          finalTime: appointment.finalTime,
-          isCancel: appointment.isCancel,
-          centerInfo: appointment.centerInfo,
-          services: appointment.services,
-          remarks: appointment.remarks,
-          createdAt: appointment.createdAt,
-          createdBy: appointment.createdBy,
-          status: appointment.status,
-          userInfo: appointment.userInfo
-            ? {
-                _id: appointment.userInfo._id,
-                name: appointment.userInfo.name,
-                email: appointment.userInfo.email,
-                profileImgUrl: appointment.userInfo.profileImgUrl,
-              }
-            : null,
-        }));
+		res.json({
+		  appointments2: formattedAppointments,
+		  usersInAppointments: formattedAppointments.length > 0 
+			? [formattedAppointments[0]['userInfo']]
+			: [],
+		});
   
-        res.json({ appointments2: formattedAppointments, usersInAppointments: [formattedAppointments[0]['userInfo']], });
-
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error en el servidor" });
-      }
-    }
+	  } catch (error) {
+		console.error(error);
+		res.status(500).json({ message: "Error en el servidor" });
+	  }
+	}
   );
 
 
