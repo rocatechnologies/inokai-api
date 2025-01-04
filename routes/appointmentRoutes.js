@@ -165,15 +165,29 @@ appointmentRouter.get(
 		endOfWeek.setDate(givenDate.getDate() - givenDate.getDay() + 7);
 		endOfWeek.setHours(23, 59, 59, 999);
   
-		const query = {
+       // Convertir fechas a cadenas
+	   const formatToMMDDYYYY = (date) => {
+		const month = (date.getMonth() + 1).toString().padStart(2, "0");
+		const day = date.getDate().toString().padStart(2, "0");
+		const year = date.getFullYear();
+		return `${month}/${day}/${year}`;
+	  };
+
+	  const formattedStartOfWeek = formatToMMDDYYYY(startOfWeek);
+	  const formattedEndOfWeek = formatToMMDDYYYY(endOfWeek);
+
+	  console.log("Rango de la semana:", formattedStartOfWeek, formattedEndOfWeek);
+
+	  // Construir query
+	  const query = {
 		  userInfo: userId,
 		  date: {
-			$gte: startOfWeek.toISOString(),
-			$lte: endOfWeek.toISOString(),
+			$gte: formattedStartOfWeek,
+			$lte: formattedEndOfWeek,
 		  },
 		};
-  
-		console.log("Rango de la semana:", startOfWeek, endOfWeek);
+
+		console.log("Rango de la semana:", formattedStartOfWeek, formattedEndOfWeek);
 		console.log("QUERY", query);
   
 		const userAppointments = await appointmentModel.find(query).populate("userInfo");
