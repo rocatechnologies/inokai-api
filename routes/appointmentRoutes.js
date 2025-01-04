@@ -198,7 +198,9 @@ appointmentRouter.get(
 		  return res.status(404).json({ message: "No se encontraron citas para esta semana." });
 		}
   
-		const formattedAppointments = userAppointments.map((appointment) => ({
+		const validAppointments = userAppointments.filter(app => app.userInfo);
+		
+		const formattedAppointments = validAppointments.map(appointment => ({
 		  _id: appointment._id,
 		  clientName: appointment.clientName,
 		  clientPhone: appointment.clientPhone,
