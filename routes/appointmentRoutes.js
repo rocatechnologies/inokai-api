@@ -200,7 +200,7 @@ appointmentRouter.get(
   
 		const validAppointments = userAppointments.filter(app => app.userInfo);
 		
-		const formattedAppointments = validAppointments.map(appointment => ({
+		const formattedAppointments = userAppointments.map(appointment => ({
 		  _id: appointment._id,
 		  clientName: appointment.clientName,
 		  clientPhone: appointment.clientPhone,
