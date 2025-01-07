@@ -1013,28 +1013,35 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 });
 
 
-//conseguir todos los empleados de una empresa v2
+// Conseguir todos los empleados de una empresa v2
 appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
-	console.log("en la de user get all employees");
+	console.log("En la de user get all employees");
   
 	try {
 	  const { selectedDB } = req.params;
+	  const { centerId } = req.query; // Obtener el centerId de los parámetros de consulta
   
 	  // Validar base de datos
 	  if (!selectedDB || typeof selectedDB !== "string") {
 		return res.status(400).json({ message: "Base de datos no válida." });
 	  }
   
+	  if (!centerId || typeof centerId !== "string") {
+		return res.status(400).json({ message: "centerId no proporcionado o no válido." });
+	  }
+  
 	  const db = mongoose.connection.useDb(selectedDB);
 	  const Users = db.model("User", User.schema);
   
-	  // Obtener usuarios (sin administradores)
-	  const users = await Users.find({ role: { $ne: "admin" } })
+	  // Filtrar usuarios por centerId y excluir administradores
+	  const users = await Users.find({ 
+		  role: { $ne: "admin" }, 
+		  centerInfo: centerId 
+		})
 		.select("name DNI email centerInfo role") // Limitar campos
-		.populate("centerInfo", "centerName")
+		.populate("centerInfo", "centerName") // Poblamos para obtener el nombre del centro
 		.exec();
   
-
 	  res.json(users);
 	} catch (error) {
 	  console.error("Error al obtener empleados:", error);
