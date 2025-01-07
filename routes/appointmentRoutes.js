@@ -1016,7 +1016,7 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 // Conseguir todos los empleados de una empresa v2
 appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
 	console.log("En la de user get all employees");
-  
+	
 	try {
 	  const { selectedDB } = req.params;
 	  const { centerId } = req.query; // Obtener el centerId de los parámetros de consulta
@@ -1033,14 +1033,35 @@ appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
 	  const db = mongoose.connection.useDb(selectedDB);
 	  const Users = db.model("User", User.schema);
   
-	  // Filtrar usuarios por centerId y excluir administradores
-	  const users = await Users.find({ 
-		  role: { $ne: "admin" }, 
-		  centerInfo: centerId 
-		})
-		.select("name DNI email centerInfo role") // Limitar campos
-		.populate("centerInfo") // Poblamos para obtener el nombre del centro
-		.exec();
+	  // Obtener empleados con el nombre del centro usando aggregate
+	  const users = await Users.aggregate([
+		{ 
+		  $match: { 
+			role: { $ne: "admin" }, 
+			centerInfo: mongoose.Types.ObjectId(centerId) 
+		  } 
+		},
+		{
+		  $lookup: {
+			from: "centers", // Nombre de la colección de centros
+			localField: "centerInfo", // Campo en la colección de usuarios
+			foreignField: "_id", // Campo en la colección de centros
+			as: "centerInfo" // Nombre del campo resultante con los datos del centro
+		  }
+		},
+		{
+		  $unwind: "$centerInfo" // Desenrolla el array de resultados
+		},
+		{
+		  $project: {
+			name: 1,
+			DNI: 1,
+			email: 1,
+			role: 1,
+			"centerInfo.centerName": 1 // Ajustado para reflejar el nombre del centro correctamente
+		  }
+		}
+	  ]);
   
 	  res.json(users);
 	} catch (error) {
@@ -1048,5 +1069,5 @@ appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
 	  res.status(500).json({ message: "Error en el servidor. Por favor, intenta más tarde." });
 	}
   });
-
+  
 export default appointmentRouter;
