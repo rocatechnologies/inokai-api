@@ -1034,17 +1034,8 @@ appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
 		.populate("centerInfo", "centerName")
 		.exec();
   
-	  // Estructurar la salida
-	  const userOutput = users.map(user => ({
-		id: user._id,
-		name: user.name,
-		email: user.email,
-		DNI: user.DNI,
-		center: user.centerInfo ? user.centerInfo.centerName : "Sin centro",
-	  }));
-  
 	  console.log("Usuarios obtenidos:", userOutput);
-	  res.json(userOutput);
+	  res.json(users);
 	} catch (error) {
 	  console.error("Error al obtener empleados:", error);
 	  res.status(500).json({ message: "Error en el servidor. Por favor, intenta más tarde." });
