@@ -539,42 +539,4 @@ userRouter.get("/get-all-employees/:selectedDB", isAuth, isAdmin, async (req, re
 	}
 });
 
-//conseguir todos los empleados de una empresa v2
-userRouter.get("/get-all-employees-v2/:selectedDB", isAuth, isAdmin, async (req, res) => {
-	console.log("en la de user get all employees");
-  
-	try {
-	  const { selectedDB } = req.params;
-  
-	  // Validar base de datos
-	  if (!selectedDB || typeof selectedDB !== "string") {
-		return res.status(400).json({ message: "Base de datos no válida." });
-	  }
-  
-	  const db = mongoose.connection.useDb(selectedDB);
-	  const Users = db.model("User", User.schema);
-  
-	  // Obtener usuarios (sin administradores)
-	  const users = await Users.find({ role: { $ne: "admin" } })
-		.select("name DNI email centerInfo role") // Limitar campos
-		.populate("centerInfo", "centerName")
-		.exec();
-  
-	  // Estructurar la salida
-	  const userOutput = users.map(user => ({
-		id: user._id,
-		name: user.name,
-		email: user.email,
-		DNI: user.DNI,
-		center: user.centerInfo ? user.centerInfo.centerName : "Sin centro",
-	  }));
-  
-	  console.log("Usuarios obtenidos:", userOutput);
-	  res.json(userOutput);
-	} catch (error) {
-	  console.error("Error al obtener empleados:", error);
-	  res.status(500).json({ message: "Error en el servidor. Por favor, intenta más tarde." });
-	}
-  });
-
 export default userRouter;
