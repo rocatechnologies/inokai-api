@@ -1038,8 +1038,7 @@ appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
 		  role: { $ne: "admin" }, 
 		  centerInfo: centerId 
 		})
-		.select("name DNI email centerInfo role") // Limitar campos
-		.populate("centerInfo", "centerName") // Poblamos para obtener el nombre del centro
+		.select("name DNI") // Limitar campos
 		.exec();
   
 	  res.json(users);
