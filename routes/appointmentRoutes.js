@@ -1014,7 +1014,7 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 
 
 //conseguir todos los empleados de una empresa v2
-userRouter.get("/get-all-employees-v2/:selectedDB", isAuth, isAdmin, async (req, res) => {
+appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
 	console.log("en la de user get all employees");
   
 	try {
