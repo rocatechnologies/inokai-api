@@ -514,4 +514,31 @@ userRouter.delete("/delete-employee/:selectedDB/:id", isAuth, isAdmin, async (re
 	}
 });
 
+
+//conseguir todos los empleados de una empresa
+userRouter.get("/get-all-employees/:selectedDB", isAuth, isAdmin, async (req, res) => {
+	console.log("en la de user get all employees");
+
+	try {
+		const { selectedDB } = req.params;
+
+		const db = mongoose.connection.useDb(selectedDB);
+		const Users = db.model("User", User.schema);
+		const CenterModel = db.model("Center", Center.schema); // Modelo de Center
+
+		const users = await Users.find()
+			.populate("centerInfo", "centerName")
+			.exec();
+
+		const userOutput = users.filter((item) => item.role != "admin");
+
+		console.log(userOutput)
+		res.json(userOutput);
+	} catch (error) {
+		console.log(error);
+		res.json({ message: "error en el servidor" });
+	}
+});
+
+
 export default userRouter;
