@@ -1030,9 +1030,11 @@ appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
   
 	  // Obtener usuarios (sin administradores)
 	  const users = await Users.find({ role: { $ne: "admin" } })
+		.select("name DNI email centerInfo role") // Limitar campos
 		.populate("centerInfo", "centerName")
 		.exec();
   
+
 	  res.json(users);
 	} catch (error) {
 	  console.error("Error al obtener empleados:", error);
