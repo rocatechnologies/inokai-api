@@ -1012,7 +1012,6 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 	}
 });
 
-
 // Conseguir todos los empleados de una empresa v2
 appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
 	console.log("En la de user get all employees");
@@ -1038,7 +1037,7 @@ appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
 		{ 
 		  $match: { 
 			role: { $ne: "admin" }, 
-			centerInfo: mongoose.Types.ObjectId(centerId) 
+			centerInfo: new mongoose.Types.ObjectId(centerId) // Corregido: usar 'new' al instanciar ObjectId
 		  } 
 		},
 		{
@@ -1046,11 +1045,11 @@ appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
 			from: "centers", // Nombre de la colección de centros
 			localField: "centerInfo", // Campo en la colección de usuarios
 			foreignField: "_id", // Campo en la colección de centros
-			as: "centerInfo" // Nombre del campo resultante con los datos del centro
+			as: "centerDetails" // Nombre del campo resultante con los datos del centro
 		  }
 		},
 		{
-		  $unwind: "$centerInfo" // Desenrolla el array de resultados
+		  $unwind: "$centerDetails" // Desenrolla el array de resultados
 		},
 		{
 		  $project: {
@@ -1058,7 +1057,7 @@ appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
 			DNI: 1,
 			email: 1,
 			role: 1,
-			"centerInfo.centerName": 1 // Ajustado para reflejar el nombre del centro correctamente
+			"centerDetails.centerName": 1 // Ajustado para reflejar el nombre del centro correctamente
 		  }
 		}
 	  ]);
@@ -1069,5 +1068,5 @@ appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
 	  res.status(500).json({ message: "Error en el servidor. Por favor, intenta más tarde." });
 	}
   });
-  
+    
 export default appointmentRouter;
