@@ -1033,7 +1033,6 @@ appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
 		.populate("centerInfo", "centerName")
 		.exec();
   
-	  console.log("Usuarios obtenidos:", userOutput);
 	  res.json(users);
 	} catch (error) {
 	  console.error("Error al obtener empleados:", error);
