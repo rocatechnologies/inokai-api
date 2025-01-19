@@ -339,7 +339,7 @@ userRouter.post("/create-employee/:selectedDB/:centerId", isAuth, isAdmin, async
 	try {
 		//1. proceso de obtner los params los datos del frontend, y seleccionar la base de datos
 		const { selectedDB, centerId } = req.params;
-		const { name, email, DNI, phone, password, services, specialities, profileImgUrl } = req.body;
+		const { name, email, DNI, phone, password, services, specialities, profileImgUrl, order } = req.body;
 		const db = mongoose.connection.useDb(selectedDB);
 
 		//2. aqui se hace referencias a los schema de las bases de datos que se usaran en el endpont
@@ -379,7 +379,8 @@ userRouter.post("/create-employee/:selectedDB/:centerId", isAuth, isAdmin, async
 			specialities,
 			role: "employee",
 			centerInfo: centerId,
-			profileImgUrl: profileImgUrl
+			profileImgUrl: profileImgUrl,
+			order: order
 		});
 
 		const centers = await Centers.findById(centerId);

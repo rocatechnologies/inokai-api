@@ -20,7 +20,8 @@ const userSchema = new Schema({
         type: String, 
         enum: ["yes", "no", "not applicable"],
         default: "yes"  // 'yes' para disponible, 'no' para no disponible, y 'not applicable' para roles que no sean employee
-    }
+    },
+    order: { type: Number }
 
 });
 
