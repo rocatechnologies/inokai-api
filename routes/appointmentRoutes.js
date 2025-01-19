@@ -64,7 +64,7 @@ appointmentRouter.get(
         const appointmentQuery = {
           centerInfo: filterCenter || centerInfo,
           date: filterDate,
-          status: { $in: ["confirmed", "noshow", ""] }, // Buscar citas con estado "confirmed" o ""
+          status: { $in: ["confirmed", "no-show", ""] }, // Buscar citas con estado "confirmed" o ""
         };
   
         // Obtener las citas y los usuarios
@@ -311,7 +311,7 @@ appointmentRouter.put(
 
 			const updatedAppointment = await appointmentModel.findByIdAndUpdate(
 				appointmentId,
-				{ status: "noShow", modifiedAt: new Date() },
+				{ status: "no-show", modifiedAt: new Date() },
 				{ new: true }
 			);
 
