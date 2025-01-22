@@ -949,8 +949,8 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 					clientName: Hora_Entrada,
 					clientPhone: Hora_Entrada,
 					date: date,
-					initTime: "10:00:00",
-					finalTime: "22:00:00",
+					initTime: "10:00",
+					finalTime: "22:00",
 					userInfo: user._id,
 					centerInfo: center._id,
 					status: "confirmed",
@@ -963,12 +963,12 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 					"HH:mm:ss"
 				);
 
-				if (formattedHora_Entrada !== "10:00:00") {
+				if (formattedHora_Entrada !== "10:00") {
 					appointments.push({
 						clientName: "Fuera de horario",
 						clientPhone: "Fuera de horario",
 						date: date,
-						initTime: "10:00:00",
+						initTime: "10:00",
 						finalTime: formattedHora_Entrada,
 						userInfo: user._id,
 						centerInfo: center._id,
@@ -976,13 +976,13 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 					});
 				}
 
-				if (formattedHora_Salida !== "22:00:00") {
+				if (formattedHora_Salida !== "22:00") {
 					appointments.push({
 						clientName: "Fuera de horario",
 						clientPhone: "Fuera de horario",
 						date: date,
 						initTime: formattedHora_Salida,
-						finalTime: "22:00:00",
+						finalTime: "22:00",
 						userInfo: user._id,
 						centerInfo: center._id,
 						status: "confirmed",
