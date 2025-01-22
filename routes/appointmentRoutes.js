@@ -40,103 +40,104 @@ appointmentRouter.get(
 	}
 );
 appointmentRouter.get(
-    "/get-all-appointments/:selectedDB",
-    isAuth,
-    async (req, res) => {
-      console.log("En conseguir todos los appointments");
+	"/get-all-appointments/:selectedDB",
+	isAuth,
+	async (req, res) => {
+	  console.log("En conseguir todos los appointments");
   
-      try {
-        const { selectedDB } = req.params;
-        const { centerInfo } = req.user;
-        const { filterDate, filterCenter } = req.query;
-
-        console.log(filterDate,'viendo el filter date')
-        console.log(centerInfo,'viendo el center nfo')
-
-         
+	  try {
+		const { selectedDB } = req.params;
+		const { centerInfo } = req.user;
+		const { filterDate, filterCenter } = req.query;
   
-        // Seleccionar base de datos
-        const db = mongoose.connection.useDb(selectedDB);
-        const appointmentModel = db.model("Appointment", Appointment.schema);
-        const userModel = db.model("User", User.schema);
+		console.log(filterDate, "viendo el filter date");
+		console.log(centerInfo, "viendo el center info");
   
-        // Construcción de la query de citas
-        const appointmentQuery = {
-          centerInfo: filterCenter || centerInfo,
-          date: filterDate,
-          status: { $in: ["confirmed", "no-show", ""] }, // Buscar citas con estado "confirmed" o ""
-        };
+		// Seleccionar base de datos
+		const db = mongoose.connection.useDb(selectedDB);
+		const appointmentModel = db.model("Appointment", Appointment.schema);
+		const userModel = db.model("User", User.schema);
   
-        // Obtener las citas y los usuarios
-        const [appointments, allUsers] = await Promise.all([
-          appointmentModel.find(appointmentQuery).populate("userInfo"),
-          userModel.find({ centerInfo: centerInfo }), // Obtén todos los usuarios sin filtrar
-        ]);
+		// Construcción de la query de citas
+		const appointmentQuery = {
+		  centerInfo: filterCenter || centerInfo,
+		  date: filterDate,
+		  status: { $in: ["confirmed", "no-show", ""] }, // Buscar citas con estado "confirmed" o ""
+		};
   
-        // console.log("Query de citas:", appointmentQuery);
-        // console.log("Citas obtenidas:", appointments);
+		// Obtener citas y usuarios
+		const [appointments, allUsers] = await Promise.all([
+		  appointmentModel
+			.find(appointmentQuery)
+			.populate("userInfo") // Incluye información del usuario asociado
+			.exec(),
+		  userModel.find({ centerInfo }).sort({ order: 1 }), // Ordenar usuarios por `order`
+		]);
   
-        const usersInAppointments = [];
-        const emailSet = new Set();
-        const appointments2 = [];
+		const usersInAppointments = [];
+		const emailSet = new Set();
+		const appointments2 = [];
   
-        // Formatear datos de citas
-        for (let i = 0; i < appointments.length; i++) {
-          const userData = appointments[i]["userInfo"];
-          const data = appointments[i];
+		// Formatear datos de citas
+		for (let i = 0; i < appointments.length; i++) {
+		  const userData = appointments[i]["userInfo"];
+		  const data = appointments[i];
   
-          const myObjet = {
-            _id: data._id,
-            clientName: data.clientName,
-            clientPhone: data.clientPhone,
-            date: data.date,
-            initTime: data.initTime,
-            finalTime: data.finalTime,
-            isCancel: data.isCancel,
-            userInfo: data.userInfo,
-            user_id: userData?._id, // Manejar el caso en que no haya usuario asociado
-            centerInfo: data.centerInfo,
-            services: data.services,
-            remarks: data.remarks,
-            createdAt: data.createdAt,
-            createdBy: data.createdBy,
-            status: data.status,
-          };
+		  const myObjet = {
+			_id: data._id,
+			clientName: data.clientName,
+			clientPhone: data.clientPhone,
+			date: data.date,
+			initTime: data.initTime,
+			finalTime: data.finalTime,
+			isCancel: data.isCancel,
+			userInfo: data.userInfo,
+			user_id: userData?._id, // Manejar el caso en que no haya usuario asociado
+			centerInfo: data.centerInfo,
+			services: data.services,
+			remarks: data.remarks,
+			createdAt: data.createdAt,
+			createdBy: data.createdBy,
+			status: data.status,
+		  };
   
-          appointments2.push(myObjet);
+		  appointments2.push(myObjet);
   
-          if (userData && !emailSet.has(userData.email)) {
-            emailSet.add(userData.email);
-            usersInAppointments.push({
-              email: userData.email,
-              name: userData.name,
-              user_id: userData._id,
-              profileImgUrl: userData.profileImgUrl,
-            });
-            console.log(userData.profileImgUrl);
-          }
-        }
+		  if (userData && !emailSet.has(userData.email)) {
+			emailSet.add(userData.email);
+			usersInAppointments.push({
+			  email: userData.email,
+			  name: userData.name,
+			  user_id: userData._id,
+			  profileImgUrl: userData.profileImgUrl,
+			  order: userData.order, // Asegúrate de incluir `order`
+			});
+		  }
+		}
   
-        // Agregar usuarios sin citas al resultado
-        const usersWithoutAppointments = allUsers
-          .filter((user) => !emailSet.has(user.email))
-          .map((user) => ({
-            email: user.email,
-            name: user.name,
-            user_id: user._id,
-            profileImgUrl: user.profileImgUrl,
-          }));
+		// Agregar usuarios sin citas al resultado
+		const usersWithoutAppointments = allUsers
+		  .filter((user) => !emailSet.has(user.email))
+		  .map((user) => ({
+			email: user.email,
+			name: user.name,
+			user_id: user._id,
+			profileImgUrl: user.profileImgUrl,
+			order: user.order, // Asegúrate de incluir `order`
+		  }));
   
-        usersInAppointments.push(...usersWithoutAppointments);
+		usersInAppointments.push(...usersWithoutAppointments);
   
-        res.json({ appointments2, usersInAppointments });
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error en el servidor" });
-      }
-    }
-);
-
+		// Ordenar `usersInAppointments` por `order` (ascendente)
+		usersInAppointments.sort((a, b) => a.order - b.order);
+  
+		res.json({ appointments2, usersInAppointments });
+	  } catch (error) {
+		console.error(error);
+		res.status(500).json({ message: "Error en el servidor" });
+	  }
+	}
+  );
 /////////////////////// get week appointments by user 
 appointmentRouter.get(
     "/get-user-week-appointments/:selectedDB",
