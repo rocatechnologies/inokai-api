@@ -628,18 +628,18 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 		console.log("Centro asignado al empleado:", centerId);
 
         // Borrar citas existentes para ese día y empleado
-        console.log("Eliminando citas existentes para el día:", formattedDate);
+        console.log("Eliminando citas existentes para el día:", date);
         await appointmentModel.deleteMany({
-            date: formattedDate,
+            date: date,
             userInfo: employee,
             clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo","Compensado", "Reyes", "Festivo", "Fuera de horario"] }
         });
         console.log("Citas eliminadas para el empleado en la fecha especificada.");
 
 		// Borrar citas existentes para ese día y empleado
-		console.log("Eliminando citas existentes para el día:", formattedDate);
+		console.log("Eliminando citas existentes para el día:", date);
 		await appointmentModel.deleteMany({
-			date: formattedDate,
+			date: date,
 			userInfo: employee,
 			clientName: {
 				$in: [
@@ -669,7 +669,7 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 			appointments.push({
 				clientName: type,
 				clientPhone: type,
-				date: formattedDate,
+				date: date,
 				initTime: formattedStartTime,
 				finalTime: formattedEndTime,
 				userInfo: user._id,
@@ -685,7 +685,7 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 				appointments.push({
 					clientName: "Fuera de horario",
 					clientPhone: "Fuera de horario",
-					date: formattedDate,
+					date: date,
 					initTime: "10:00:00",
 					finalTime: formattedStartTime,
 					userInfo: user._id,
@@ -701,7 +701,7 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 				appointments.push({
 					clientName: "Fuera de horario",
 					clientPhone: "Fuera de horario",
-					date: formattedDate,
+					date: date,
 					initTime: formattedEndTime,
 					finalTime: "22:00:00",
 					userInfo: user._id,
