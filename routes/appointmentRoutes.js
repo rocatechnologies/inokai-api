@@ -657,8 +657,8 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 
 		// Crear nuevas citas basadas en horario
 		const appointments = [];
-		const formattedStartTime = moment(startTime, "HH:mm:ss").format("HH:mm:ss");
-		const formattedEndTime = moment(endTime, "HH:mm:ss").format("HH:mm:ss");
+		const formattedStartTime = moment(startTime, "HH:mm").format("HH:mm");
+		const formattedEndTime = moment(endTime, "HH:mm").format("HH:mm");
 
 		console.log("Hora de inicio formateada:", formattedStartTime);
 		console.log("Hora de fin formateada:", formattedEndTime);
@@ -678,7 +678,7 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 		} else {
 			// Si type no viene, comportamiento predeterminado
 			console.log("Creando citas predeterminadas (Fuera de horario).");
-			if (formattedStartTime !== "10:00:00") {
+			if (formattedStartTime !== "10:00") {
 				console.log(
 					"Añadiendo cita 'Fuera de horario' antes de la hora de entrada."
 				);
@@ -686,7 +686,7 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 					clientName: "Fuera de horario",
 					clientPhone: "Fuera de horario",
 					date: date,
-					initTime: "10:00:00",
+					initTime: "10:00",
 					finalTime: formattedStartTime,
 					userInfo: user._id,
 					centerInfo: centerId,
@@ -694,7 +694,7 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 				});
 			}
 
-			if (formattedEndTime !== "22:00:00") {
+			if (formattedEndTime !== "22:00") {
 				console.log(
 					"Añadiendo cita 'Fuera de horario' después de la hora de salida."
 				);
@@ -703,7 +703,7 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 					clientPhone: "Fuera de horario",
 					date: date,
 					initTime: formattedEndTime,
-					finalTime: "22:00:00",
+					finalTime: "22:00",
 					userInfo: user._id,
 					centerInfo: centerId,
 					status: "confirmed",
