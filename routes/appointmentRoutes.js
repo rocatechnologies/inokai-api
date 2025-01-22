@@ -1052,15 +1052,19 @@ appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
 		  $unwind: "$centerDetails" // Desenrolla el array de resultados
 		},
 		{
-		  $project: {
-			name: 1,
-			DNI: 1,
-			email: 1,
-			role: 1,
-			"centerDetails.centerName": 1 // Ajustado para reflejar el nombre del centro correctamente
+			$project: {
+			  name: 1,
+			  DNI: 1,
+			  email: 1,
+			  role: 1,
+			  order: 1, // Asegúrate de incluir el campo `order` en el resultado
+			  "centerDetails.centerName": 1 // Ajustado para reflejar el nombre del centro correctamente
+			}
+		  },
+		  {
+			$sort: { order: 1 } // Ordenar por el campo `order` en orden ascendente
 		  }
-		}
-	  ]);
+		]);
   
 	  res.json(users);
 	} catch (error) {
