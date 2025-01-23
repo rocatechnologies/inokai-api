@@ -40,103 +40,104 @@ appointmentRouter.get(
 	}
 );
 appointmentRouter.get(
-    "/get-all-appointments/:selectedDB",
-    isAuth,
-    async (req, res) => {
-      console.log("En conseguir todos los appointments");
+	"/get-all-appointments/:selectedDB",
+	isAuth,
+	async (req, res) => {
+	  console.log("En conseguir todos los appointments");
   
-      try {
-        const { selectedDB } = req.params;
-        const { centerInfo } = req.user;
-        const { filterDate, filterCenter } = req.query;
-
-        console.log(filterDate,'viendo el filter date')
-        console.log(centerInfo,'viendo el center nfo')
-
-         
+	  try {
+		const { selectedDB } = req.params;
+		const { centerInfo } = req.user;
+		const { filterDate, filterCenter } = req.query;
   
-        // Seleccionar base de datos
-        const db = mongoose.connection.useDb(selectedDB);
-        const appointmentModel = db.model("Appointment", Appointment.schema);
-        const userModel = db.model("User", User.schema);
+		console.log(filterDate, "viendo el filter date");
+		console.log(centerInfo, "viendo el center info");
   
-        // Construcción de la query de citas
-        const appointmentQuery = {
-          centerInfo: filterCenter || centerInfo,
-          date: filterDate,
-          status: { $in: ["confirmed", "no-show", ""] }, // Buscar citas con estado "confirmed" o ""
-        };
+		// Seleccionar base de datos
+		const db = mongoose.connection.useDb(selectedDB);
+		const appointmentModel = db.model("Appointment", Appointment.schema);
+		const userModel = db.model("User", User.schema);
   
-        // Obtener las citas y los usuarios
-        const [appointments, allUsers] = await Promise.all([
-          appointmentModel.find(appointmentQuery).populate("userInfo"),
-          userModel.find({ centerInfo: centerInfo }), // Obtén todos los usuarios sin filtrar
-        ]);
+		// Construcción de la query de citas
+		const appointmentQuery = {
+		  centerInfo: filterCenter || centerInfo,
+		  date: filterDate,
+		  status: { $in: ["confirmed", "no-show", ""] }, // Buscar citas con estado "confirmed" o ""
+		};
   
-        // console.log("Query de citas:", appointmentQuery);
-        // console.log("Citas obtenidas:", appointments);
+		// Obtener citas y usuarios
+		const [appointments, allUsers] = await Promise.all([
+		  appointmentModel
+			.find(appointmentQuery)
+			.populate("userInfo") // Incluye información del usuario asociado
+			.exec(),
+		  userModel.find({ centerInfo }).sort({ order: 1 }), // Ordenar usuarios por `order`
+		]);
   
-        const usersInAppointments = [];
-        const emailSet = new Set();
-        const appointments2 = [];
+		const usersInAppointments = [];
+		const emailSet = new Set();
+		const appointments2 = [];
   
-        // Formatear datos de citas
-        for (let i = 0; i < appointments.length; i++) {
-          const userData = appointments[i]["userInfo"];
-          const data = appointments[i];
+		// Formatear datos de citas
+		for (let i = 0; i < appointments.length; i++) {
+		  const userData = appointments[i]["userInfo"];
+		  const data = appointments[i];
   
-          const myObjet = {
-            _id: data._id,
-            clientName: data.clientName,
-            clientPhone: data.clientPhone,
-            date: data.date,
-            initTime: data.initTime,
-            finalTime: data.finalTime,
-            isCancel: data.isCancel,
-            userInfo: data.userInfo,
-            user_id: userData?._id, // Manejar el caso en que no haya usuario asociado
-            centerInfo: data.centerInfo,
-            services: data.services,
-            remarks: data.remarks,
-            createdAt: data.createdAt,
-            createdBy: data.createdBy,
-            status: data.status,
-          };
+		  const myObjet = {
+			_id: data._id,
+			clientName: data.clientName,
+			clientPhone: data.clientPhone,
+			date: data.date,
+			initTime: data.initTime,
+			finalTime: data.finalTime,
+			isCancel: data.isCancel,
+			userInfo: data.userInfo,
+			user_id: userData?._id, // Manejar el caso en que no haya usuario asociado
+			centerInfo: data.centerInfo,
+			services: data.services,
+			remarks: data.remarks,
+			createdAt: data.createdAt,
+			createdBy: data.createdBy,
+			status: data.status,
+		  };
   
-          appointments2.push(myObjet);
+		  appointments2.push(myObjet);
   
-          if (userData && !emailSet.has(userData.email)) {
-            emailSet.add(userData.email);
-            usersInAppointments.push({
-              email: userData.email,
-              name: userData.name,
-              user_id: userData._id,
-              profileImgUrl: userData.profileImgUrl,
-            });
-            console.log(userData.profileImgUrl);
-          }
-        }
+		  if (userData && !emailSet.has(userData.email)) {
+			emailSet.add(userData.email);
+			usersInAppointments.push({
+			  email: userData.email,
+			  name: userData.name,
+			  user_id: userData._id,
+			  profileImgUrl: userData.profileImgUrl,
+			  order: userData.order, // Asegúrate de incluir `order`
+			});
+		  }
+		}
   
-        // Agregar usuarios sin citas al resultado
-        const usersWithoutAppointments = allUsers
-          .filter((user) => !emailSet.has(user.email))
-          .map((user) => ({
-            email: user.email,
-            name: user.name,
-            user_id: user._id,
-            profileImgUrl: user.profileImgUrl,
-          }));
+		// Agregar usuarios sin citas al resultado
+		const usersWithoutAppointments = allUsers
+		  .filter((user) => !emailSet.has(user.email))
+		  .map((user) => ({
+			email: user.email,
+			name: user.name,
+			user_id: user._id,
+			profileImgUrl: user.profileImgUrl,
+			order: user.order, // Asegúrate de incluir `order`
+		  }));
   
-        usersInAppointments.push(...usersWithoutAppointments);
+		usersInAppointments.push(...usersWithoutAppointments);
   
-        res.json({ appointments2, usersInAppointments });
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error en el servidor" });
-      }
-    }
-);
-
+		// Ordenar `usersInAppointments` por `order` (ascendente)
+		usersInAppointments.sort((a, b) => a.order - b.order);
+  
+		res.json({ appointments2, usersInAppointments });
+	  } catch (error) {
+		console.error(error);
+		res.status(500).json({ message: "Error en el servidor" });
+	  }
+	}
+  );
 /////////////////////// get week appointments by user 
 appointmentRouter.get(
     "/get-user-week-appointments/:selectedDB",
@@ -628,18 +629,18 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 		console.log("Centro asignado al empleado:", centerId);
 
         // Borrar citas existentes para ese día y empleado
-        console.log("Eliminando citas existentes para el día:", formattedDate);
+        console.log("Eliminando citas existentes para el día:", date);
         await appointmentModel.deleteMany({
-            date: formattedDate,
+            date: date,
             userInfo: employee,
             clientName: { $in: ["Libre", "Baja", "Vacaciones", "Año Nuevo","Compensado", "Reyes", "Festivo", "Fuera de horario"] }
         });
         console.log("Citas eliminadas para el empleado en la fecha especificada.");
 
 		// Borrar citas existentes para ese día y empleado
-		console.log("Eliminando citas existentes para el día:", formattedDate);
+		console.log("Eliminando citas existentes para el día:", date);
 		await appointmentModel.deleteMany({
-			date: formattedDate,
+			date: date,
 			userInfo: employee,
 			clientName: {
 				$in: [
@@ -657,8 +658,8 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 
 		// Crear nuevas citas basadas en horario
 		const appointments = [];
-		const formattedStartTime = moment(startTime, "HH:mm:ss").format("HH:mm:ss");
-		const formattedEndTime = moment(endTime, "HH:mm:ss").format("HH:mm:ss");
+		const formattedStartTime = moment(startTime, "HH:mm").format("HH:mm");
+		const formattedEndTime = moment(endTime, "HH:mm").format("HH:mm");
 
 		console.log("Hora de inicio formateada:", formattedStartTime);
 		console.log("Hora de fin formateada:", formattedEndTime);
@@ -669,7 +670,7 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 			appointments.push({
 				clientName: type,
 				clientPhone: type,
-				date: formattedDate,
+				date: date,
 				initTime: formattedStartTime,
 				finalTime: formattedEndTime,
 				userInfo: user._id,
@@ -678,15 +679,15 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 		} else {
 			// Si type no viene, comportamiento predeterminado
 			console.log("Creando citas predeterminadas (Fuera de horario).");
-			if (formattedStartTime !== "10:00:00") {
+			if (formattedStartTime !== "10:00") {
 				console.log(
 					"Añadiendo cita 'Fuera de horario' antes de la hora de entrada."
 				);
 				appointments.push({
 					clientName: "Fuera de horario",
 					clientPhone: "Fuera de horario",
-					date: formattedDate,
-					initTime: "10:00:00",
+					date: date,
+					initTime: "10:00",
 					finalTime: formattedStartTime,
 					userInfo: user._id,
 					centerInfo: centerId,
@@ -694,16 +695,16 @@ appointmentRouter.post("/horario-manual/:selectedDB", async (req, res) => {
 				});
 			}
 
-			if (formattedEndTime !== "22:00:00") {
+			if (formattedEndTime !== "22:00") {
 				console.log(
 					"Añadiendo cita 'Fuera de horario' después de la hora de salida."
 				);
 				appointments.push({
 					clientName: "Fuera de horario",
 					clientPhone: "Fuera de horario",
-					date: formattedDate,
+					date: date,
 					initTime: formattedEndTime,
-					finalTime: "22:00:00",
+					finalTime: "22:00",
 					userInfo: user._id,
 					centerInfo: centerId,
 					status: "confirmed",
@@ -949,8 +950,8 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 					clientName: Hora_Entrada,
 					clientPhone: Hora_Entrada,
 					date: date,
-					initTime: "10:00:00",
-					finalTime: "22:00:00",
+					initTime: "10:00",
+					finalTime: "22:00",
 					userInfo: user._id,
 					centerInfo: center._id,
 					status: "confirmed",
@@ -963,12 +964,12 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 					"HH:mm:ss"
 				);
 
-				if (formattedHora_Entrada !== "10:00:00") {
+				if (formattedHora_Entrada !== "10:00") {
 					appointments.push({
 						clientName: "Fuera de horario",
 						clientPhone: "Fuera de horario",
 						date: date,
-						initTime: "10:00:00",
+						initTime: "10:00",
 						finalTime: formattedHora_Entrada,
 						userInfo: user._id,
 						centerInfo: center._id,
@@ -976,13 +977,13 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 					});
 				}
 
-				if (formattedHora_Salida !== "22:00:00") {
+				if (formattedHora_Salida !== "22:00") {
 					appointments.push({
 						clientName: "Fuera de horario",
 						clientPhone: "Fuera de horario",
 						date: date,
 						initTime: formattedHora_Salida,
-						finalTime: "22:00:00",
+						finalTime: "22:00",
 						userInfo: user._id,
 						centerInfo: center._id,
 						status: "confirmed",
@@ -1052,15 +1053,19 @@ appointmentRouter.get("/get-all-employees-v2/:selectedDB", async (req, res) => {
 		  $unwind: "$centerDetails" // Desenrolla el array de resultados
 		},
 		{
-		  $project: {
-			name: 1,
-			DNI: 1,
-			email: 1,
-			role: 1,
-			"centerDetails.centerName": 1 // Ajustado para reflejar el nombre del centro correctamente
+			$project: {
+			  name: 1,
+			  DNI: 1,
+			  email: 1,
+			  role: 1,
+			  order: 1, // Asegúrate de incluir el campo `order` en el resultado
+			  "centerDetails.centerName": 1 // Ajustado para reflejar el nombre del centro correctamente
+			}
+		  },
+		  {
+			$sort: { order: 1 } // Ordenar por el campo `order` en orden ascendente
 		  }
-		}
-	  ]);
+		]);
   
 	  res.json(users);
 	} catch (error) {
