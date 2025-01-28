@@ -958,10 +958,10 @@ appointmentRouter.post("/generar-horarios/:selectedDB", async (req, res) => {
 				});
 			} else {
 				const formattedHora_Entrada = moment(Hora_Entrada, "HH:mm:ss").format(
-					"HH:mm:ss"
+					"HH:mm"
 				);
 				const formattedHora_Salida = moment(Hora_Salida, "HH:mm:ss").format(
-					"HH:mm:ss"
+					"HH:mm"
 				);
 
 				if (formattedHora_Entrada !== "10:00") {
